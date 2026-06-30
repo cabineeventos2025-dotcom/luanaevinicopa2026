@@ -95,9 +95,9 @@ const r32: R[] = [
   {id:"r32-01",home:"zaf",away:"can",hs:0,as_:1,          date:"2026-06-28T21:00:00Z",done:true, next:"r16-01",slot:"home"},
   {id:"r32-04",home:"ned",away:"mar",hs:1,as_:1,ph:2,pa:3,date:"2026-06-29T21:00:00Z",done:true, next:"r16-01",slot:"away"},
   {id:"r32-03",home:"ger",away:"par",hs:1,as_:1,ph:3,pa:4,date:"2026-06-29T21:00:00Z",done:true, next:"r16-02",slot:"home"},
-  {id:"r32-05",home:"fra",away:"swe",hs:null,as_:null,     date:"2026-06-30T21:00:00Z",done:false,next:"r16-02",slot:"away"},
+  {id:"r32-05",home:"fra",away:"swe",hs:0,as_:0,ph:5,pa:4,date:"2026-06-30T21:00:00Z",done:true, next:"r16-02",slot:"away"},
   {id:"r32-02",home:"bra",away:"jpn",hs:2,as_:1,          date:"2026-06-29T21:00:00Z",done:true, next:"r16-03",slot:"home"},
-  {id:"r32-06",home:"civ",away:"nor",hs:null,as_:null,     date:"2026-07-01T00:00:00Z",done:false,next:"r16-03",slot:"away"},
+  {id:"r32-06",home:"civ",away:"nor",hs:1,as_:2,          date:"2026-06-30T21:00:00Z",done:true, next:"r16-03",slot:"away"},
   {id:"r32-07",home:"mex",away:"ecu",hs:null,as_:null,     date:"2026-07-01T00:00:00Z",done:false,next:"r16-04",slot:"home"},
   {id:"r32-08",home:"esp",away:"aut",hs:null,as_:null,     date:"2026-07-02T00:00:00Z",done:false,next:"r16-04",slot:"away"},
   // LADO DIREITO

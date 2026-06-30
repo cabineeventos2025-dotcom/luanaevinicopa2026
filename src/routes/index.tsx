@@ -155,7 +155,36 @@ function HomePage() {
 
             {/* Overview */}
             {tab === "overview" && (
-              <div className="space-y-8">
+              <div className="space-y-6">
+
+                {/* ═══ BANNER CTA PALPITAR ═══ */}
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-green-600 via-green-700 to-emerald-800 p-6 text-white shadow-2xl">
+                  <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/5" />
+                  <div className="absolute -bottom-4 -left-4 h-20 w-20 rounded-full bg-yellow-400/10" />
+                  <div className="relative flex flex-col sm:flex-row items-center gap-5">
+                    <div className="text-6xl flex-shrink-0 drop-shadow-lg">⚽🏆</div>
+                    <div className="flex-1 text-center sm:text-left">
+                      <h2 className="text-xl sm:text-2xl font-black leading-tight mb-1">
+                        Participe do Desafio da Copa!
+                      </h2>
+                      <p className="text-green-100 text-sm mb-1">
+                        Monte seu chaveamento, escolha os placares e dispute o
+                        <span className="font-black text-yellow-300"> Ranking da Família!</span>
+                      </p>
+                      <p className="text-green-200 text-xs">
+                        🎯 Grátis • 🔮 Seu palpite salvo automaticamente • 📄 Receba seu PDF
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setTab("sim")}
+                      id="home-cta-palpitar-btn"
+                      className="flex-shrink-0 flex items-center gap-2 rounded-2xl bg-yellow-400 px-8 py-4 text-lg font-black text-green-900 hover:bg-yellow-300 transition-all hover:scale-105 shadow-xl"
+                    >
+                      ✨ Quero Palpitar!
+                    </button>
+                  </div>
+                </div>
+
                 {/* Stats */}
                 <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
                   <StatCard

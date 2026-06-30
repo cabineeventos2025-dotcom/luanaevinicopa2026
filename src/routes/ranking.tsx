@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { RankingTable } from "@/components/ranking/RankingTable";
+import { RankingPodium } from "@/components/ranking/RankingPodium";
 import { getRankingRepository } from "@/repositories";
 import type { RankingEntry } from "@/types/prediction";
 import { RefreshCw, Trophy, Users, Share2, Copy, Check } from "lucide-react";
@@ -109,6 +110,8 @@ function RankingPage() {
             </div>
           </div>
         )}
+
+        <RankingPodium entries={entries} />
 
         <RankingTable entries={entries} loading={loading} error={error} />
 
