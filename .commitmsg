@@ -1,1 +1,1 @@
-feat: placar simulador, podio ranking, CTA banner, PDF corrigido, Noruega 2x1 CIV
+ci: force redeploy vercel with supabase env vars
