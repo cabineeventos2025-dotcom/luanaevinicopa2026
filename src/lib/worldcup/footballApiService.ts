@@ -1,5 +1,8 @@
 import type { WorldCupData } from "./types";
-import { fetchWorldCupData as fetchFromFootballDataOrg, hasFootballDataOrgConfig } from "./footballDataOrgService";
+import {
+  fetchWorldCupData as fetchFromFootballDataOrg,
+  hasFootballDataOrgConfig,
+} from "@/services/footballDataOrgService";
 import { buildMockData } from "./mockWorldCupData";
 import { processWorldCupData } from "./bracketEngine";
 
@@ -13,8 +16,8 @@ export interface FetchResult {
 
 /**
  * Order:
- * 1. football-data.org (if configured)
- * 2. API-Football (if configured) — placeholder
+ * 1. football-data.org (via server proxy or direct)
+ * 2. API-Football (placeholder)
  * 3. Mock fallback
  */
 export async function fetchWorldCupData(): Promise<FetchResult> {
@@ -28,14 +31,10 @@ export async function fetchWorldCupData(): Promise<FetchResult> {
     }
   }
 
-  // (API-Football could be tried here if implemented)
-
   const mock = processWorldCupData(buildMockData());
   return {
     data: mock,
     source: "mock",
-    warning: hasFootballDataOrgConfig()
-      ? "Não foi possível buscar dados ao vivo. Mostrando dados demonstrativos."
-      : "API não configurada. Mostrando dados demonstrativos.",
+    warning: "Não foi possível buscar dados reais agora. Mostrando dados demonstrativos.",
   };
 }
