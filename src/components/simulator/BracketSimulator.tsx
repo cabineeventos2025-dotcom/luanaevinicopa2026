@@ -6,6 +6,7 @@ import { Trophy } from "lucide-react";
 interface Props {
   matches: Match[];
   onSelectWinner: (matchId: string, slot: "home" | "away", homeScore?: number, awayScore?: number) => void;
+  onReset: (matchId: string) => void;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -55,7 +56,11 @@ function TeamRow({
 // ────────────────────────────────────────────────────────────────────────────
 // Card de jogo — com inputs de placar e botões de escolha
 // ────────────────────────────────────────────────────────────────────────────
-function GameCard({ match, onSelectWinner }: { match: Match; onSelectWinner: Props["onSelectWinner"] }) {
+function GameCard({ match, onSelectWinner, onReset }: {
+  match: Match;
+  onSelectWinner: Props["onSelectWinner"];
+  onReset: Props["onReset"];
+}) {
   const [hs, setHs] = useState<string>("");
   const [as_, setAs] = useState<string>("");
 
@@ -99,12 +104,24 @@ function GameCard({ match, onSelectWinner }: { match: Match; onSelectWinner: Pro
         isFinished ? "bg-green-50 border-green-100" : bothTeams ? "bg-amber-50 border-amber-100" : "bg-gray-50 border-gray-100"
       )}>
         <span className="text-[9px] text-gray-400 font-medium">{dateStr}</span>
-        {isFinished
-          ? <span className="text-[9px] font-black text-green-700">FIM ✓</span>
-          : bothTeams
-            ? <span className="text-[9px] font-bold text-amber-600">Palpite ↓</span>
-            : <span className="text-[9px] text-gray-300">Aguardando</span>
-        }
+        <div className="flex items-center gap-1">
+          {/* Botão de reset por jogo */}
+          {(homeWins || awayWins) && !isFinished && (
+            <button
+              onClick={() => onReset(match.id)}
+              title="Resetar este jogo"
+              className="text-[9px] text-gray-400 hover:text-red-500 transition-colors px-1 rounded hover:bg-red-50"
+            >
+              ↺
+            </button>
+          )}
+          {isFinished
+            ? <span className="text-[9px] font-black text-green-700">FIM ✓</span>
+            : bothTeams
+              ? <span className="text-[9px] font-bold text-amber-600">Palpite ↓</span>
+              : <span className="text-[9px] text-gray-300">Aguardando</span>
+          }
+        </div>
       </div>
 
       {/* Times */}
@@ -172,9 +189,11 @@ function GameCard({ match, onSelectWinner }: { match: Match; onSelectWinner: Pro
 // ────────────────────────────────────────────────────────────────────────────
 // Coluna de fase
 // ────────────────────────────────────────────────────────────────────────────
-function RoundCol({ title, emoji, matches, onSelectWinner, center }: {
+function RoundCol({ title, emoji, matches, onSelectWinner, onReset, center }: {
   title: string; emoji: string; matches: Match[];
-  onSelectWinner: Props["onSelectWinner"]; center?: boolean;
+  onSelectWinner: Props["onSelectWinner"];
+  onReset: Props["onReset"];
+  center?: boolean;
 }) {
   return (
     <div className={cn("flex flex-col flex-shrink-0", center ? "w-[185px]" : "w-[185px]")}>
@@ -186,7 +205,7 @@ function RoundCol({ title, emoji, matches, onSelectWinner, center }: {
       </div>
       <div className="flex flex-col gap-2 justify-around flex-1">
         {matches.map((m) => (
-          <GameCard key={m.id} match={m} onSelectWinner={onSelectWinner} />
+          <GameCard key={m.id} match={m} onSelectWinner={onSelectWinner} onReset={onReset} />
         ))}
       </div>
     </div>
@@ -207,7 +226,7 @@ function Sep() {
 // ────────────────────────────────────────────────────────────────────────────
 // COMPONENTE PRINCIPAL
 // ────────────────────────────────────────────────────────────────────────────
-export function BracketSimulator({ matches, onSelectWinner }: Props) {
+export function BracketSimulator({ matches, onSelectWinner, onReset }: Props) {
   const byId = useCallback((id: string) => matches.find((m) => m.id === id) ?? null, [matches]);
 
   // ESQUERDO: 16avos→Oitavas→Quartas→Semis
@@ -234,20 +253,20 @@ export function BracketSimulator({ matches, onSelectWinner }: Props) {
       <div className="flex items-start gap-0 min-w-[1200px]">
 
         {/* ═══ ESQUERDA ═══ */}
-        <RoundCol title="16avos" emoji="🔵" matches={lR32} onSelectWinner={onSelectWinner} />
+        <RoundCol title="16avos" emoji="🔵" matches={lR32} onSelectWinner={onSelectWinner} onReset={onReset} />
         <Sep />
-        <RoundCol title="Oitavas" emoji="⚽" matches={lR16} onSelectWinner={onSelectWinner} />
+        <RoundCol title="Oitavas" emoji="⚽" matches={lR16} onSelectWinner={onSelectWinner} onReset={onReset} />
         <Sep />
-        <RoundCol title="Quartas" emoji="🔥" matches={lQF} onSelectWinner={onSelectWinner} />
+        <RoundCol title="Quartas" emoji="🔥" matches={lQF} onSelectWinner={onSelectWinner} onReset={onReset} />
         <Sep />
-        <RoundCol title="Semis" emoji="⭐" matches={lSF} onSelectWinner={onSelectWinner} />
+        <RoundCol title="Semis" emoji="⭐" matches={lSF} onSelectWinner={onSelectWinner} onReset={onReset} />
         <Sep />
 
         {/* ═══ CENTRO — FINAL ═══ */}
         <div className="flex flex-col items-center gap-3 flex-shrink-0 w-[195px] mt-1 px-1">
           <div className="text-3xl text-center">🏆</div>
           <div className="text-[10px] font-black text-amber-600 uppercase text-center">Final</div>
-          {finalM && <GameCard match={finalM} onSelectWinner={onSelectWinner} />}
+          {finalM && <GameCard match={finalM} onSelectWinner={onSelectWinner} onReset={onReset} />}
 
           {champion && (
             <div className="w-full rounded-2xl bg-gradient-to-b from-amber-100 to-yellow-50 border-2 border-amber-400 p-3 text-center shadow-lg">
@@ -260,21 +279,30 @@ export function BracketSimulator({ matches, onSelectWinner }: Props) {
             </div>
           )}
 
+          {/* 3º Lugar */}
           <div className="w-full border-t border-dashed border-gray-200 pt-2">
             <div className="text-[9px] font-bold text-gray-400 text-center mb-1">🥉 3º Lugar</div>
-            {thirdM && <GameCard match={thirdM} onSelectWinner={onSelectWinner} />}
+            {thirdM && (thirdM.homeTeam && thirdM.awayTeam) ? (
+              <GameCard match={thirdM} onSelectWinner={onSelectWinner} onReset={onReset} />
+            ) : (
+              <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-2 text-center">
+                <p className="text-[9px] text-gray-400 leading-tight">
+                  Simule ambas as<br/>Semifinais para<br/>desbloquear o 3º lugar
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* ═══ DIREITA ═══ */}
         <Sep />
-        <RoundCol title="Semis" emoji="⭐" matches={rSF} onSelectWinner={onSelectWinner} />
+        <RoundCol title="Semis" emoji="⭐" matches={rSF} onSelectWinner={onSelectWinner} onReset={onReset} />
         <Sep />
-        <RoundCol title="Quartas" emoji="🔥" matches={rQF} onSelectWinner={onSelectWinner} />
+        <RoundCol title="Quartas" emoji="🔥" matches={rQF} onSelectWinner={onSelectWinner} onReset={onReset} />
         <Sep />
-        <RoundCol title="Oitavas" emoji="⚽" matches={rR16} onSelectWinner={onSelectWinner} />
+        <RoundCol title="Oitavas" emoji="⚽" matches={rR16} onSelectWinner={onSelectWinner} onReset={onReset} />
         <Sep />
-        <RoundCol title="16avos" emoji="🔵" matches={rR32} onSelectWinner={onSelectWinner} />
+        <RoundCol title="16avos" emoji="🔵" matches={rR32} onSelectWinner={onSelectWinner} onReset={onReset} />
 
       </div>
     </div>

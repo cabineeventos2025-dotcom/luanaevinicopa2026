@@ -1,35 +1,29 @@
 import type { Prediction } from "@/types/prediction";
 import { shortHash } from "./hashUtils";
 
-interface ChannelConfig {
-  channelName: string;
-  logoUrl?: string;
-  tagline: string;
-  primaryColor: string;
-  secondaryColor: string;
+// ─── Remove acentos para que jsPDF (helvetica) não quebre os caracteres ───────
+function s(text: string | null | undefined): string {
+  if (!text) return "";
+  return String(text)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x00-\x7F]/g, "?"); // qualquer outro não-ASCII vira ?
 }
 
 const stageNames: Record<string, string> = {
-  LAST_32: "Fase de 32",
-  LAST_16: "Oitavas de Final",
-  QUARTER_FINALS: "Quartas de Final",
-  SEMI_FINALS: "Semifinais",
-  THIRD_PLACE: "3o Lugar",
-  FINAL: "Final",
+  LAST_32:       "Fase de 32",
+  LAST_16:       "Oitavas de Final",
+  QUARTER_FINALS:"Quartas de Final",
+  SEMI_FINALS:   "Semifinais",
+  THIRD_PLACE:   "3o Lugar",
+  FINAL:         "Final",
 };
 
-function tryHex(h: string): [number, number, number] {
-  try {
-    const c = h.startsWith("#") ? h : "#" + h;
-    return [parseInt(c.slice(1,3),16), parseInt(c.slice(3,5),16), parseInt(c.slice(5,7),16)];
-  } catch { return [245,158,11]; }
-}
-
 /**
- * Carrega uma imagem como base64 para uso no jsPDF.
+ * Tenta carregar imagem via fetch para uso no PDF.
  * Retorna null em caso de falha (CORS etc.).
  */
-async function loadImageAsBase64(url: string): Promise<string | null> {
+async function fetchBase64(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, { mode: "cors" });
     if (!res.ok) return null;
@@ -37,117 +31,105 @@ async function loadImageAsBase64(url: string): Promise<string | null> {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
+      reader.onerror   = () => resolve(null);
       reader.readAsDataURL(blob);
     });
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 /**
- * Gera PDF do palpite usando apenas jsPDF — sem html2canvas, sem CORS obrigatório.
- * Header vermelho com canal do YouTube. Campeão com bandeira.
+ * Gera o PDF do palpite.
+ * Header vermelho com canal YouTube da Luana.
+ * Sem dependência de ChannelConfig — branding fixo.
  */
-export async function generatePredictionPDF(
-  prediction: Prediction,
-  channelConfig: ChannelConfig,
-): Promise<void> {
+export async function generatePredictionPDF(prediction: Prediction): Promise<void> {
   const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const W = 210, M = 14, CW = W - M * 2;
   const pH = pdf.internal.pageSize.getHeight();
   let y = 0;
 
-  // ── HEADER VERMELHO — Canal YouTube ────────────────────────────────────────
-  // Fundo vermelho YouTube
-  pdf.setFillColor(255, 0, 0);
-  pdf.rect(0, 0, W, 36, "F");
+  // ── HEADER: fundo vermelho YouTube ──────────────────────────────────────────
+  pdf.setFillColor(200, 0, 0);
+  pdf.rect(0, 0, W, 38, "F");
 
-  // Ícone YouTube (retângulo vermelho arredondado + triângulo branco simulado)
-  // Desenhamos um badge "YT" estilizado
+  // Badge YT
   pdf.setFillColor(255, 255, 255);
-  pdf.roundedRect(M, 4, 18, 13, 2, 2, "F");
-  pdf.setFillColor(255, 0, 0);
-  pdf.setFontSize(7); pdf.setFont("helvetica", "bold");
-  pdf.setTextColor(255, 0, 0);
-  // Triângulo play simulado com texto
-  pdf.setTextColor(255, 0, 0);
-  pdf.text("▶", M + 5, 12.5);
-  pdf.setFontSize(7);
-  pdf.text("YT", M + 9, 12.5);
+  pdf.roundedRect(M, 7, 22, 14, 2, 2, "F");
+  pdf.setFontSize(9); pdf.setFont("helvetica", "bold");
+  pdf.setTextColor(200, 0, 0);
+  pdf.text("YT", M + 7, 16.5);
 
   // Nome do canal
   pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(18); pdf.setFont("helvetica", "bold");
-  pdf.text(channelConfig.channelName, M + 22, 14);
-
-  // Tagline / link YouTube
-  pdf.setFontSize(8); pdf.setFont("helvetica", "normal");
-  pdf.text("youtube.com/@Luanaqueirozefamilia  •  Desafio da Copa 2026", M + 22, 22);
+  pdf.setFontSize(17); pdf.setFont("helvetica", "bold");
+  pdf.text("Luana Queiroz e Familia", M + 26, 16);
 
   // Subtítulo
-  pdf.setFontSize(7);
-  pdf.text("Comprovante de palpite — guarde este PDF!", M + 22, 29);
+  pdf.setFontSize(8); pdf.setFont("helvetica", "normal");
+  pdf.text("youtube.com/@Luanaqueirozefamilia  |  Desafio da Copa 2026", M + 26, 24);
+  pdf.text("Comprovante de palpite - guarde este PDF!", M + 26, 31);
 
-  y = 42;
+  y = 44;
 
-  // ── PARTICIPANTE ──────────────────────────────────────────────────────────
+  // ── PARTICIPANTE ────────────────────────────────────────────────────────────
   pdf.setFillColor(255, 251, 235);
   pdf.roundedRect(M, y, CW, 22, 3, 3, "F");
-  pdf.setDrawColor(245, 158, 11); pdf.setLineWidth(0.4);
+  pdf.setDrawColor(200, 130, 0); pdf.setLineWidth(0.4);
   pdf.roundedRect(M, y, CW, 22, 3, 3, "S");
 
-  pdf.setTextColor(150, 80, 0); pdf.setFontSize(7); pdf.setFont("helvetica", "bold");
-  pdf.text("PARTICIPANTE", M + 3, y + 6);
-  pdf.setFontSize(13); pdf.setFont("helvetica", "bold");
-  pdf.setTextColor(80, 40, 0);
-  pdf.text(prediction.participant.name, M + 3, y + 14);
-  pdf.setFontSize(8); pdf.setFont("helvetica", "normal");
-  pdf.setTextColor(120, 60, 0);
-  pdf.text(`📍 ${prediction.participant.city}`, M + 3, y + 20);
+  pdf.setTextColor(140, 80, 0); pdf.setFontSize(7); pdf.setFont("helvetica", "bold");
+  pdf.text("PARTICIPANTE", M + 3, y + 7);
 
-  // Código do palpite
+  pdf.setFontSize(14); pdf.setFont("helvetica", "bold");
+  pdf.setTextColor(60, 30, 0);
+  pdf.text(s(prediction.participant.name), M + 3, y + 15);
+
+  pdf.setFontSize(8); pdf.setFont("helvetica", "normal");
+  pdf.setTextColor(100, 50, 0);
+  pdf.text(s(prediction.participant.city), M + 3, y + 21);
+
+  // Código + data (direita)
   pdf.setFontSize(7); pdf.setFont("helvetica", "bold");
-  pdf.setTextColor(150, 80, 0);
-  const codeStr = `Código: ${prediction.code}`;
-  pdf.text(codeStr, W - M - pdf.getTextWidth(codeStr) - 2, y + 6);
+  pdf.setTextColor(140, 80, 0);
+  const codeStr = `Codigo: ${prediction.code}`;
+  pdf.text(codeStr, W - M - pdf.getTextWidth(codeStr) - 2, y + 7);
+
   pdf.setFontSize(6); pdf.setFont("helvetica", "normal");
-  pdf.setTextColor(120, 60, 0);
-  const dateStr = prediction.createdAtBrazil ?? new Date(prediction.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-  const dateW = pdf.getTextWidth(dateStr);
-  pdf.text(dateStr, W - M - dateW - 2, y + 12);
+  pdf.setTextColor(110, 60, 0);
+  const dateStr = prediction.createdAtBrazil
+    ?? new Date(prediction.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  const dw = pdf.getTextWidth(s(dateStr));
+  pdf.text(s(dateStr), W - M - dw - 2, y + 13);
 
   y += 28;
 
-  // ── CAMPEÃO ESCOLHIDO ──────────────────────────────────────────────────────
+  // ── CAMPEÃO ─────────────────────────────────────────────────────────────────
   if (prediction.championTeamName) {
     pdf.setFillColor(255, 215, 0);
-    pdf.roundedRect(M, y, CW, 22, 3, 3, "F");
-    pdf.setDrawColor(180, 140, 0); pdf.setLineWidth(0.4);
-    pdf.roundedRect(M, y, CW, 22, 3, 3, "S");
+    pdf.roundedRect(M, y, CW, 26, 3, 3, "F");
+    pdf.setDrawColor(180, 140, 0); pdf.setLineWidth(0.5);
+    pdf.roundedRect(M, y, CW, 26, 3, 3, "S");
 
-    pdf.setTextColor(100, 70, 0); pdf.setFontSize(7); pdf.setFont("helvetica", "bold");
-    pdf.text("🏆 MEU CAMPEÃO DA COPA 2026", M + 3, y + 6);
+    pdf.setTextColor(90, 60, 0); pdf.setFontSize(7); pdf.setFont("helvetica", "bold");
+    pdf.text("MEU CAMPEAO DA COPA 2026  (Trofeu)", M + 3, y + 7);
 
-    pdf.setFontSize(16); pdf.setFont("helvetica", "bold");
-    pdf.setTextColor(60, 30, 0);
-    pdf.text(prediction.championTeamName, M + 3, y + 17);
+    pdf.setFontSize(17); pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(50, 25, 0);
+    pdf.text(s(prediction.championTeamName), M + 3, y + 19);
 
-    // Tentar carregar bandeira do campeão
+    // Tentar bandeira
     if (prediction.championFlagUrl) {
-      const flagBase64 = await loadImageAsBase64(prediction.championFlagUrl);
-      if (flagBase64) {
-        try {
-          pdf.addImage(flagBase64, "PNG", W - M - 30, y + 2, 28, 18);
-        } catch { /* silencia erro de imagem */ }
+      const imgData = await fetchBase64(prediction.championFlagUrl);
+      if (imgData) {
+        try { pdf.addImage(imgData, "PNG", W - M - 30, y + 3, 28, 20); } catch { /* silencia */ }
       }
     }
 
-    y += 28;
+    y += 32;
   }
 
-  // ── PALPITES POR FASE ──────────────────────────────────────────────────────
+  // ── PALPITES POR FASE ───────────────────────────────────────────────────────
   const stageOrder = ["LAST_32","LAST_16","QUARTER_FINALS","SEMI_FINALS","THIRD_PLACE","FINAL"];
   const byStage: Record<string, typeof prediction.matches> = {};
   for (const m of prediction.matches ?? []) {
@@ -156,20 +138,21 @@ export async function generatePredictionPDF(
     byStage[key].push(m);
   }
 
-  const newPage = () => { pdf.addPage(); y = 15; };
-  const checkPage = (needed: number) => { if (y + needed > pH - 15) newPage(); };
+  const newPage  = () => { pdf.addPage(); y = 15; };
+  const checkY   = (need: number) => { if (y + need > pH - 15) newPage(); };
 
   for (const stage of stageOrder) {
     const items = byStage[stage];
     if (!items?.length) continue;
 
-    checkPage(12);
-    // Cabeçalho da fase
-    const [r, g, b] = stage === "FINAL" ? [255, 0, 0] : tryHex(channelConfig.primaryColor);
-    pdf.setFillColor(r, g, b);
+    checkY(12);
+
+    // Header da fase
+    const isFinal = stage === "FINAL";
+    pdf.setFillColor(isFinal ? 200 : 245, isFinal ? 0 : 120, isFinal ? 0 : 11);
     pdf.rect(M, y, CW, 7, "F");
     pdf.setTextColor(255, 255, 255); pdf.setFontSize(7); pdf.setFont("helvetica", "bold");
-    pdf.text(stageNames[stage] ?? stage, M + 2, y + 5);
+    pdf.text(s(stageNames[stage] ?? stage), M + 2, y + 5);
     y += 9;
 
     let col = 0;
@@ -177,65 +160,70 @@ export async function generatePredictionPDF(
 
     for (const match of items) {
       if (!match.homeTeamName && !match.awayTeamName) continue;
-      checkPage(14);
+      checkY(14);
 
-      const cx = M + (col === 0 ? 0 : colW + 2);
-
+      const cx = M + col * (colW + 2);
       const hasWinner = !!match.predictedWinnerId;
-      const hasScore = match.predictedHomeScore != null && match.predictedAwayScore != null;
+      const hasScore  = match.predictedHomeScore != null && match.predictedAwayScore != null;
+      const homeWins  = match.predictedWinnerId === match.homeTeamId;
+      const awayWins  = match.predictedWinnerId === match.awayTeamId;
 
-      pdf.setFillColor(hasWinner ? 240 : 250, hasWinner ? 253 : 250, hasWinner ? 244 : 250);
-      pdf.roundedRect(cx, y, colW, 12, 2, 2, "F");
-      pdf.setDrawColor(hasWinner ? 34 : 200, hasWinner ? 197 : 200, hasWinner ? 94 : 200);
+      // Card fundo
+      pdf.setFillColor(hasWinner ? 240 : 250, hasWinner ? 255 : 250, hasWinner ? 240 : 250);
+      pdf.roundedRect(cx, y, colW, 13, 2, 2, "F");
+      pdf.setDrawColor(hasWinner ? 34 : 200, hasWinner ? 170 : 200, hasWinner ? 85 : 200);
       pdf.setLineWidth(0.3);
-      pdf.roundedRect(cx, y, colW, 12, 2, 2, "S");
+      pdf.roundedRect(cx, y, colW, 13, 2, 2, "S");
 
-      const home = match.homeTeamName ?? "?";
-      const away = match.awayTeamName ?? "?";
-      const homeWins = match.predictedWinnerId === match.homeTeamId;
-      const awayWins = match.predictedWinnerId === match.awayTeamId;
+      // Times
+      const home = s(match.homeTeamName ?? "A definir");
+      const away = s(match.awayTeamName ?? "A definir");
 
-      pdf.setFontSize(6); pdf.setFont("helvetica", homeWins ? "bold" : "normal");
-      pdf.setTextColor(homeWins ? 22 : 80, homeWins ? 101 : 80, homeWins ? 52 : 80);
-      pdf.text(home.slice(0, 18), cx + 2, y + 5);
+      pdf.setFontSize(6);
+      pdf.setFont("helvetica", homeWins ? "bold" : "normal");
+      pdf.setTextColor(homeWins ? 22 : 60, homeWins ? 101 : 60, homeWins ? 52 : 60);
+      pdf.text(home.slice(0, 20), cx + 2, y + 5);
 
-      pdf.setFontSize(6); pdf.setFont("helvetica", awayWins ? "bold" : "normal");
-      pdf.setTextColor(awayWins ? 22 : 100, awayWins ? 101 : 100, awayWins ? 52 : 100);
-      pdf.text(away.slice(0, 18), cx + 2, y + 10);
+      pdf.setFont("helvetica", awayWins ? "bold" : "normal");
+      pdf.setTextColor(awayWins ? 22 : 80, awayWins ? 101 : 80, awayWins ? 52 : 80);
+      pdf.text(away.slice(0, 20), cx + 2, y + 11);
 
+      // Placar ou seta vencedor
       if (hasScore) {
-        const scoreStr = `${match.predictedHomeScore} × ${match.predictedAwayScore}`;
+        const sc = `${match.predictedHomeScore} x ${match.predictedAwayScore}`;
         pdf.setFontSize(7); pdf.setFont("helvetica", "bold");
         pdf.setTextColor(50, 50, 50);
-        const sw = pdf.getTextWidth(scoreStr);
-        pdf.text(scoreStr, cx + colW - sw - 2, y + 7);
+        const sw = pdf.getTextWidth(sc);
+        pdf.text(sc, cx + colW - sw - 2, y + 8);
       } else if (hasWinner) {
-        const w = homeWins ? "▲" : "▲";
-        pdf.setFontSize(7); pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(8); pdf.setFont("helvetica", "bold");
         pdf.setTextColor(22, 101, 52);
-        pdf.text(homeWins ? "▲" : " ", cx + colW - 5, y + 4.5);
-        pdf.text(awayWins ? "▲" : " ", cx + colW - 5, y + 9.5);
-        void w;
+        if (homeWins) pdf.text("v", cx + colW - 5, y + 5.5);
+        if (awayWins) pdf.text("v", cx + colW - 5, y + 11.5);
       }
 
       col++;
-      if (col >= 2) { col = 0; y += 14; }
+      if (col >= 2) { col = 0; y += 15; }
     }
-    if (col > 0) { y += 14; }
-    y += 2;
+    if (col > 0) { y += 15; }
+    y += 3;
   }
 
-  // ── RODAPÉ ────────────────────────────────────────────────────────────────
-  checkPage(18);
-  pdf.setFillColor(240, 240, 240);
-  pdf.rect(M, y, CW, 14, "F");
-  pdf.setTextColor(100, 100, 100); pdf.setFontSize(6); pdf.setFont("helvetica", "normal");
+  // ── RODAPÉ ─────────────────────────────────────────────────────────────────
+  checkY(14);
+  pdf.setFillColor(245, 245, 245);
+  pdf.rect(M, y, CW, 12, "F");
+  pdf.setDrawColor(200, 200, 200); pdf.setLineWidth(0.2);
+  pdf.rect(M, y, CW, 12, "S");
+
+  pdf.setTextColor(120, 120, 120); pdf.setFontSize(6); pdf.setFont("helvetica", "normal");
   const hash = await shortHash(prediction.code + prediction.participant.name);
-  pdf.text(`Hash de verificação: ${hash}`, M + 2, y + 5);
-  pdf.text(`Gerado em: ${dateStr}`, M + 2, y + 10);
-  pdf.setFont("helvetica", "bold");
-  pdf.setTextColor(255, 0, 0);
-  pdf.text(`youtube.com/@Luanaqueirozefamilia`, W - M - 2, y + 8, { align: "right" });
+  pdf.text(`Hash: ${hash}`, M + 2, y + 5);
+  pdf.text(s(dateStr ?? ""), M + 2, y + 10);
+
+  pdf.setFont("helvetica", "bold"); pdf.setTextColor(200, 0, 0);
+  const ytText = "youtube.com/@Luanaqueirozefamilia";
+  pdf.text(ytText, W - M - pdf.getTextWidth(ytText) - 2, y + 8);
 
   pdf.save(`palpite_copa2026_${prediction.code}.pdf`);
 }

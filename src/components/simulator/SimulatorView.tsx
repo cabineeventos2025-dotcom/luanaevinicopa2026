@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import type { WorldCupData } from "@/lib/worldcup/types";
 import { useChannelConfig } from "@/contexts/ChannelConfigContext";
 import { BracketSimulator } from "./BracketSimulator";
-import { advanceBracket, simulateWinner } from "@/lib/worldcup/bracketEngine";
+import { advanceBracket, simulateWinner, resetSimMatch } from "@/lib/worldcup/bracketEngine";
 import { getRankingRepository } from "@/repositories";
 import { generatePredictionPDF } from "@/utils/pdfExport";
 import { generateCode, generateHash } from "@/utils/hashUtils";
@@ -33,11 +33,11 @@ export function SimulatorView({ realData }: Props) {
     ? [...simMatches].flatMap((m) => [m.homeTeam, m.awayTeam]).find((t) => t?.id === finalMatch.winner) ?? null
     : null;
 
-  // Progresso
-  const knockout = simMatches.filter((m) => m.stage !== "GROUP_STAGE" && m.id !== "3rd");
-  const chosen = knockout.filter((m) => m.winner).length;
-  const total = knockout.length;
-  const pct = total > 0 ? Math.round((chosen / total) * 100) : 0;
+  // Progresso (inclui 3º lugar no total)
+  const knockout = simMatches.filter((m) => m.stage !== "GROUP_STAGE");
+  const chosen   = knockout.filter((m) => m.winner).length;
+  const total    = knockout.length;
+  const pct      = total > 0 ? Math.round((chosen / total) * 100) : 0;
 
   const handleSelect = useCallback((matchId: string, slot: "home" | "away", hs?: number, as_?: number) => {
     const m = simMatches.find((x) => x.id === matchId);
@@ -50,6 +50,10 @@ export function SimulatorView({ realData }: Props) {
     setSaved(false);
     setPalpiteCode("");
     toast.success("Palpite resetado! ♻️");
+  };
+
+  const handleResetMatch = (matchId: string) => {
+    setSimMatches((prev) => resetSimMatch(prev, matchId));
   };
 
   const handleSubmit = async () => {
@@ -127,13 +131,7 @@ export function SimulatorView({ realData }: Props) {
       toast.success(`✅ Palpite salvo! Código: ${code}`, { duration: 8000 });
 
       // Gerar PDF
-      await generatePredictionPDF(prediction as any, {
-        channelName: config.channelName,
-        logoUrl: config.logoUrl,
-        tagline: config.tagline,
-        primaryColor: config.primaryColor ?? "#f59e0b",
-        secondaryColor: config.secondaryColor ?? "#22c55e",
-      });
+      await generatePredictionPDF(prediction as any);
       toast.success("📄 PDF baixado com sucesso!");
 
     } catch (e) {
@@ -223,7 +221,7 @@ export function SimulatorView({ realData }: Props) {
         </div>
 
         <div className="p-3">
-          <BracketSimulator matches={simMatches} onSelectWinner={handleSelect} />
+          <BracketSimulator matches={simMatches} onSelectWinner={handleSelect} onReset={handleResetMatch} />
         </div>
       </div>
 

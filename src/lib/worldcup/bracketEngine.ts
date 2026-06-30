@@ -168,6 +168,64 @@ export function simulateWinner(
   return advanceBracket(copy);
 }
 
+/**
+ * Reseta apenas UM jogo do simulador e propaga a limpeza para frente.
+ * Jogos com resultado real (status:"finished" da origem) não são afetados.
+ */
+export function resetSimMatch(matches: Match[], matchId: string): Match[] {
+  const copy = matches.map((m) => ({ ...m }));
+  const byId = new Map(copy.map((m) => [m.id, m]));
+
+  const target = byId.get(matchId);
+  if (!target) return copy;
+
+  // Limpar este jogo
+  target.winner = null;
+  target.homeScore = null;
+  target.awayScore = null;
+  target.penaltiesHome = null;
+  target.penaltiesAway = null;
+  target.status = "scheduled";
+
+  // Limpar em cadeia para frente
+  const collectForward = (mid: string): string[] => {
+    const cur = byId.get(mid);
+    if (!cur?.nextMatchId) return [];
+    return [cur.nextMatchId, ...collectForward(cur.nextMatchId)];
+  };
+
+  for (const id of collectForward(matchId)) {
+    const f = byId.get(id);
+    if (!f) continue;
+    f.homeTeam   = null;
+    f.awayTeam   = null;
+    f.homeScore  = null;
+    f.awayScore  = null;
+    f.penaltiesHome = null;
+    f.penaltiesAway = null;
+    f.status     = "scheduled";
+    f.winner     = null;
+  }
+
+  // Limpar 3º lugar se for relacionado a semi
+  if (target.stage === "SEMI_FINALS") {
+    const third = copy.find((x) => x.stage === "THIRD_PLACE");
+    if (third) {
+      third.homeTeam   = null;
+      third.awayTeam   = null;
+      third.homeScore  = null;
+      third.awayScore  = null;
+      third.penaltiesHome = null;
+      third.penaltiesAway = null;
+      third.status     = "scheduled";
+      third.winner     = null;
+    }
+  }
+
+  // Re-propagar o que ainda estiver definido
+  return advanceBracket(copy);
+}
+
 export function getTeamPath(teamId: string, matches: Match[]): Match[] {
   return matches
     .filter((m) => m.homeTeam?.id === teamId || m.awayTeam?.id === teamId)
