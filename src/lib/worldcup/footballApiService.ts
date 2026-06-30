@@ -1,7 +1,6 @@
 import type { WorldCupData } from "./types";
 import {
   fetchWorldCupData as fetchFromFootballDataOrg,
-  hasFootballDataOrgConfig,
 } from "@/services/footballDataOrgService";
 import { buildMockData } from "./mockWorldCupData";
 import { processWorldCupData } from "./bracketEngine";
@@ -15,26 +14,23 @@ export interface FetchResult {
 }
 
 /**
- * Order:
- * 1. football-data.org (via server proxy or direct)
- * 2. API-Football (placeholder)
- * 3. Mock fallback
+ * Tenta buscar dados reais da football-data.org (via proxy Vite em dev,
+ * ou direto com a chave VITE_FOOTBALL_DATA_API_KEY em produção).
+ * Se falhar, usa dados demonstrativos.
  */
 export async function fetchWorldCupData(): Promise<FetchResult> {
-  if (hasFootballDataOrgConfig()) {
-    try {
-      const raw = await fetchFromFootballDataOrg();
-      const processed = processWorldCupData(raw);
-      return { data: processed, source: "football-data.org" };
-    } catch (err) {
-      console.error("[footballApiService] football-data.org falhou:", err);
-    }
+  try {
+    const raw = await fetchFromFootballDataOrg();
+    const processed = processWorldCupData(raw);
+    return { data: processed, source: "football-data.org" };
+  } catch (err) {
+    console.warn("[footballApiService] Usando dados demonstrativos:", err);
   }
 
   const mock = processWorldCupData(buildMockData());
   return {
     data: mock,
     source: "mock",
-    warning: "Não foi possível buscar dados reais agora. Mostrando dados demonstrativos.",
+    warning: "Não foi possível buscar dados reais. Mostrando dados demonstrativos.",
   };
 }

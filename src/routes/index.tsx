@@ -2,254 +2,414 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { useWorldCupData } from "@/lib/worldcup/useWorldCupData";
-import { BracketView } from "@/components/worldcup/BracketView";
+import { OfficialBracketView } from "@/components/worldcup/OfficialBracketView";
 import { GroupStandings } from "@/components/worldcup/GroupStandings";
 import { TeamSearch } from "@/components/worldcup/TeamSearch";
-import { SimulationMode } from "@/components/worldcup/SimulationMode";
-import { MatchCard } from "@/components/worldcup/MatchCard";
-import { Trophy, Calendar, Flag, RefreshCw, Share2, CircleAlert, Loader2, CheckCircle2 } from "lucide-react";
+import { SimulatorView } from "@/components/simulator/SimulatorView";
+import { Header } from "@/components/layout/Header";
+import { Navigation } from "@/components/layout/Navigation";
+import { YouTubeButton } from "@/components/common/YouTubeButton";
+import { SimulatorProvider } from "@/contexts/SimulatorContext";
+import { useChannelConfig } from "@/contexts/ChannelConfigContext";
+import type { TabKey } from "@/types/navigation";
+import {
+  Trophy,
+  Calendar,
+  Flag,
+  RefreshCw,
+  CircleAlert,
+  Loader2,
+  CheckCircle2,
+  Star,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ChannelConfig } from "@/components/channel/ChannelConfig";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Chaveamento Copa do Mundo — Acompanhe em tempo real" },
-      { name: "description", content: "Acompanhe o chaveamento da Copa do Mundo: grupos, mata-mata, classificados, próximos jogos e simulador." },
-      { property: "og:title", content: "Chaveamento Copa do Mundo" },
-      { property: "og:description", content: "Acompanhe em tempo real o caminho das seleções até a final." },
-    ],
-  }),
   component: HomePage,
 });
 
-type TabKey = "overview" | "groups" | "bracket" | "sim" | "teams";
-
-const TABS: Array<{ key: TabKey; label: string }> = [
-  { key: "overview", label: "Visão Geral" },
-  { key: "groups", label: "Grupos" },
-  { key: "bracket", label: "Chaveamento" },
-  { key: "sim", label: "Simulador" },
-  { key: "teams", label: "Seleções" },
-];
-
 function formatDateTime(d: Date | null) {
   if (!d) return "—";
-  return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function HomePage() {
   const { data, source, warning, loading, refreshing, lastUpdated, refresh } = useWorldCupData();
   const [tab, setTab] = useState<TabKey>("overview");
+  const { config } = useChannelConfig();
 
   const stats = useMemo(() => {
-    if (!data) return { total: 0, finished: 0, upcoming: 0, next: [] as typeof data extends null ? never : any[] };
+    if (!data) return { total: 0, finished: 0, upcoming: 0, next: [] as any[] };
     const total = data.teams.length;
     const finished = data.matches.filter((m) => m.status === "finished").length;
-    const upcoming = data.matches.filter((m) => m.status === "scheduled" && m.homeTeam && m.awayTeam);
+    const upcoming = data.matches.filter(
+      (m) => m.status === "scheduled" && m.homeTeam && m.awayTeam,
+    );
     return { total, finished, upcoming: upcoming.length, next: upcoming.slice(0, 4) };
   }, [data]);
 
-  const share = async () => {
-    const text = "Veja o chaveamento atualizado da Copa do Mundo";
-    const url = typeof window !== "undefined" ? window.location.href : "";
-    if (navigator.share) {
-      try { await navigator.share({ title: "Chaveamento Copa do Mundo", text, url }); return; } catch {}
-    }
-    try { await navigator.clipboard.writeText(`${text}: ${url}`); toast.success("Link copiado!"); }
-    catch { toast.error("Falha ao compartilhar"); }
-  };
-
   return (
-    <div className="min-h-screen text-foreground">
-      <Toaster richColors theme="dark" position="top-center" />
-      <Header onShare={share} />
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-yellow-50/30 to-white text-gray-900">
+      <Toaster richColors position="top-center" />
+      <Header />
 
-      <main className="container mx-auto px-4 pb-16 max-w-6xl">
-        <Hero refreshing={refreshing} onRefresh={refresh} lastUpdated={lastUpdated} source={source} warning={warning} />
+      <main className="container mx-auto px-4 pb-20 max-w-6xl">
+        {/* Hero */}
+        <section className="py-8 sm:py-10">
+          <div className="rounded-3xl bg-white border-2 border-amber-200 shadow-lg p-6 sm:p-8 overflow-hidden relative">
+            {/* Decorative background */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <div className="absolute -top-8 -right-8 text-[120px] opacity-5 select-none">⚽</div>
+              <div className="absolute -bottom-8 -left-8 text-[100px] opacity-5 select-none">🏆</div>
+            </div>
 
+            <div className="relative">
+              <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
+                <div className="min-w-0">
+                  {/* Logo + Channel */}
+                  <div className="flex items-center gap-3 mb-3">
+                    {config.logoUrl ? (
+                      <img
+                        src={config.logoUrl}
+                        alt={config.channelName}
+                        className="h-12 w-12 rounded-xl object-cover ring-2 ring-amber-400 shadow-md"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-md">
+                        <Trophy className="h-6 w-6 text-white" />
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-widest text-amber-600">
+                        {config.channelName}
+                      </div>
+                      <div className="text-xs text-gray-400">Copa do Mundo 2026</div>
+                    </div>
+                  </div>
+
+                  <h1 className="text-3xl sm:text-5xl font-black text-gray-900 leading-tight mb-2">
+                    <span className="text-amber-500">Palpite</span> da Copa{" "}
+                    <span className="text-green-600">2026</span> 🏆
+                  </h1>
+                  <p className="text-base text-gray-500 max-w-prose">
+                    {config.tagline}
+                  </p>
+                </div>
+
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <button
+                    onClick={refresh}
+                    disabled={refreshing}
+                    id="hero-refresh-btn"
+                    className="flex items-center gap-2 rounded-xl bg-green-500 text-white px-4 py-2.5 text-sm font-bold hover:bg-green-600 disabled:opacity-60 transition-all shadow-md"
+                  >
+                    <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+                    <span className="hidden sm:inline">Atualizar agora</span>
+                  </button>
+                  <YouTubeButton variant="pill" />
+                </div>
+              </div>
+
+              {/* Status bar */}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                {source === "football-data.org" ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 font-bold text-green-700">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Dados via football-data.org
+                  </span>
+                ) : source === "mock" ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 font-bold text-amber-700">
+                    <CircleAlert className="h-3.5 w-3.5" /> Dados demonstrativos
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 font-bold text-blue-700">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Buscando dados reais…
+                  </span>
+                )}
+                <span className="text-gray-400">
+                  Última atualização: {formatDateTime(lastUpdated)}
+                </span>
+                {warning && (
+                  <span className="text-gray-400 italic">• {warning}</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Loading state */}
         {loading || !data ? (
-          <div className="flex items-center justify-center py-24 text-muted-foreground gap-2">
-            <Loader2 className="h-5 w-5 animate-spin" /> Buscando dados reais…
+          <div className="flex items-center justify-center py-24 gap-3 text-gray-500">
+            <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+            <span className="font-semibold">Buscando dados reais…</span>
           </div>
         ) : (
           <>
-            <Tabs tab={tab} setTab={setTab} />
+            <Navigation tab={tab} setTab={setTab} />
 
+            {/* Overview */}
             {tab === "overview" && (
-              <div className="space-y-6">
-                <DashboardSummary
-                  total={stats.total}
-                  finished={stats.finished}
-                  upcoming={stats.upcoming}
-                  champion={data.champion}
-                  lastUpdated={lastUpdated}
-                />
-                <section>
-                  <SectionHeader title="Próximos jogos" icon={<Calendar className="h-4 w-4" />} />
-                  {stats.next.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Sem jogos agendados.</p>
-                  ) : (
+              <div className="space-y-8">
+                {/* Stats */}
+                <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+                  <StatCard
+                    label="Seleções"
+                    value={stats.total}
+                    icon={<Flag className="h-5 w-5 text-blue-500" />}
+                    accent="bg-blue-50 border-blue-200"
+                    valueColor="text-blue-700"
+                  />
+                  <StatCard
+                    label="Finalizados"
+                    value={stats.finished}
+                    icon={<CheckCircle2 className="h-5 w-5 text-green-500" />}
+                    accent="bg-green-50 border-green-200"
+                    valueColor="text-green-700"
+                  />
+                  <StatCard
+                    label="Próximos"
+                    value={stats.upcoming}
+                    icon={<Calendar className="h-5 w-5 text-amber-500" />}
+                    accent="bg-amber-50 border-amber-200"
+                    valueColor="text-amber-700"
+                  />
+                  <StatCard
+                    label="Campeão"
+                    value={
+                      data.champion ? (
+                        <span className="flex items-center gap-2">
+                          <img
+                            src={data.champion.flagUrl}
+                            alt=""
+                            className="h-5 w-7 rounded-sm object-cover shadow-sm"
+                          />
+                          <span className="truncate">{data.champion.name}</span>
+                        </span>
+                      ) : (
+                        "A definir"
+                      )
+                    }
+                    icon={<Trophy className="h-5 w-5 text-yellow-500" />}
+                    accent="bg-yellow-50 border-yellow-200"
+                    valueColor="text-yellow-700"
+                  />
+                </div>
+
+                {/* Next matches */}
+                {stats.next.length > 0 && (
+                  <section>
+                    <SectionHeader
+                      title="Próximos jogos"
+                      icon={<Calendar className="h-5 w-5" />}
+                    />
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                      {stats.next.map((m) => <MatchCard key={m.id} match={m} />)}
+                      {stats.next.map((m) => (
+                        <OverviewMatchCard key={m.id} match={m} />
+                      ))}
                     </div>
-                  )}
-                </section>
+                  </section>
+                )}
+
+                {/* Bracket preview */}
                 <section>
-                  <SectionHeader title="Chaveamento" icon={<Trophy className="h-4 w-4" />} />
-                  <BracketView bracket={data.bracket} />
+                  <SectionHeader title="Chaveamento oficial" icon={<Trophy className="h-5 w-5" />} />
+                  <OfficialBracketView bracket={data.bracket} />
+                </section>
+
+                {/* Simulator CTA */}
+                <div className="rounded-3xl bg-gradient-to-r from-amber-400 to-yellow-400 p-6 sm:p-8 text-center shadow-xl">
+                  <div className="text-5xl mb-3">✨</div>
+                  <h2 className="text-2xl font-black text-white mb-2">
+                    Monte seu Palpite da Copa!
+                  </h2>
+                  <p className="text-amber-100 mb-5 max-w-md mx-auto">
+                    Escolha os vencedores, informe os placares e gere seu PDF para compartilhar com a família.
+                  </p>
+                  <button
+                    onClick={() => setTab("sim")}
+                    id="overview-go-to-simulator-btn"
+                    className="rounded-2xl bg-white px-8 py-3.5 text-base font-black text-amber-600 hover:bg-amber-50 transition-all shadow-lg hover:scale-105 active:scale-95"
+                  >
+                    ⚽ Ir para o Simulador
+                  </button>
+                </div>
+
+                {/* Channel config */}
+                <section>
+                  <SectionHeader title="Personalização do Canal" icon={<Star className="h-5 w-5" />} />
+                  <ChannelConfig />
                 </section>
               </div>
             )}
-            {tab === "groups" && <GroupStandings groups={data.groups} />}
-            {tab === "bracket" && (
-              <div>
-                <p className="text-sm text-muted-foreground mb-4">O vencedor avança automaticamente para a próxima fase.</p>
-                <BracketView bracket={data.bracket} />
+
+            {/* Groups */}
+            {tab === "groups" && (
+              <div className="space-y-6">
+                <div className="rounded-2xl bg-white border border-amber-200 p-4 text-center shadow-sm">
+                  <p className="text-sm text-gray-500">
+                    📊 Classificação dos grupos da Copa do Mundo 2026.
+                  </p>
+                </div>
+                <GroupStandings groups={data.groups} />
               </div>
             )}
-            {tab === "sim" && <SimulationMode realData={data} />}
+
+            {/* Official Bracket */}
+            {tab === "bracket" && (
+              <div className="space-y-4">
+                <div className="rounded-2xl bg-white border border-amber-200 p-4 shadow-sm">
+                  <h2 className="font-black text-xl text-gray-900 mb-1">Chaveamento Oficial</h2>
+                  <p className="text-sm text-gray-500">
+                    Este é o chaveamento oficial com os dados reais. Não é afetado pelo simulador.
+                  </p>
+                </div>
+                <OfficialBracketView bracket={data.bracket} />
+              </div>
+            )}
+
+            {/* Simulator */}
+            {tab === "sim" && (
+              <SimulatorProvider>
+                <SimulatorView realData={data} />
+              </SimulatorProvider>
+            )}
+
+            {/* Teams */}
             {tab === "teams" && <TeamSearch data={data} />}
           </>
         )}
       </main>
 
-      <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
-        Chaveamento Copa do Mundo • Dados {source === "football-data.org" ? "via football-data.org" : "demonstrativos"}
+      {/* Footer */}
+      <footer className="border-t border-amber-200/60 bg-white/80 backdrop-blur py-8 text-center">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-4">
+            <YouTubeButton variant="compact" />
+            <a
+              href="/ranking"
+              className="text-sm font-bold text-amber-600 hover:text-amber-700 transition-colors"
+            >
+              🥇 Ranking da Família
+            </a>
+            <a
+              href="/regulamento"
+              className="text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              📜 Regulamento
+            </a>
+          </div>
+          <p className="text-xs text-gray-400">
+            Palpite da Copa 2026 • {config.channelName} •{" "}
+            {source === "football-data.org" ? "Dados via football-data.org" : "Dados demonstrativos"}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            Esta é uma brincadeira familiar. Não envolve pagamento ou qualquer valor financeiro.
+          </p>
+        </div>
       </footer>
     </div>
   );
 }
 
-function Header({ onShare }: { onShare: () => void }) {
+function SectionHeader({ title, icon }: { title: string; icon: React.ReactNode }) {
   return (
-    <header className="border-b border-border/60 bg-background/60 backdrop-blur sticky top-0 z-20">
-      <div className="container mx-auto px-4 max-w-6xl py-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-green via-brand-yellow to-brand-blue">
-            <Trophy className="h-5 w-5 text-background" />
-          </div>
-          <div className="min-w-0">
-            <div className="font-display text-lg sm:text-xl leading-tight truncate">Chaveamento Copa do Mundo</div>
-            <div className="text-[11px] text-muted-foreground truncate">Acompanhe em tempo real o caminho até a final</div>
-          </div>
-        </div>
-        <button onClick={onShare} className="chip bg-brand-blue/15 text-brand-blue hover:bg-brand-blue/25">
-          <Share2 className="h-3 w-3" /> Compartilhar
-        </button>
-      </div>
-    </header>
+    <div className="flex items-center gap-2 mb-4">
+      <span className="text-amber-500">{icon}</span>
+      <h2 className="text-2xl font-black text-gray-900">{title}</h2>
+    </div>
   );
 }
 
-function Hero({
-  refreshing, onRefresh, lastUpdated, source, warning,
+function StatCard({
+  label,
+  value,
+  icon,
+  accent,
+  valueColor,
 }: {
-  refreshing: boolean; onRefresh: () => void; lastUpdated: Date | null;
-  source: "football-data.org" | "api-football" | "mock"; warning?: string;
+  label: string;
+  value: React.ReactNode;
+  icon: React.ReactNode;
+  accent: string;
+  valueColor: string;
 }) {
   return (
-    <section className="py-6 sm:py-10">
-      <div className="card-glass p-5 sm:p-7">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 items-start sm:items-center">
-          <div className="min-w-0">
-            <span className="chip bg-brand-green/15 text-brand-green mb-2">Edição 2026</span>
-            <h1 className="font-display text-3xl sm:text-5xl leading-none">
-              O <span className="text-brand-yellow">caminho</span> até a <span className="text-brand-green">taça</span>
-            </h1>
-            <p className="text-sm text-muted-foreground mt-2 max-w-prose">
-              Grupos, mata-mata e simulador num só lugar. O chaveamento atualiza automaticamente assim que cada jogo termina.
-            </p>
-          </div>
-          <button
-            onClick={onRefresh}
-            disabled={refreshing}
-            className="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand-green text-primary-foreground px-3 py-2 text-sm font-semibold hover:bg-brand-green/90 disabled:opacity-60"
-          >
-            <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-            <span className="hidden sm:inline">Atualizar agora</span>
-          </button>
+    <div className={cn("rounded-2xl border-2 bg-white p-4 shadow-sm", accent)}>
+      <div className="flex items-center gap-2 mb-2">
+        {icon}
+        <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">{label}</div>
+      </div>
+      <div className={cn("text-2xl font-black leading-none truncate", valueColor)}>{value}</div>
+    </div>
+  );
+}
+
+function OverviewMatchCard({ match }: { match: any }) {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm hover:shadow-md transition-shadow">
+      <div className="space-y-2">
+        <TeamRowMini
+          team={match.homeTeam}
+          score={match.homeScore}
+          isWinner={match.winner === match.homeTeam?.id}
+        />
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-px bg-gray-100" />
+          <span className="text-[10px] font-black text-gray-300">vs</span>
+          <div className="flex-1 h-px bg-gray-100" />
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-          {source === "football-data.org" ? (
-            <span className="chip bg-brand-green/15 text-brand-green"><CheckCircle2 className="h-3 w-3" /> Dados via football-data.org</span>
-          ) : (
-            <span className="chip bg-brand-yellow/15 text-brand-yellow"><CircleAlert className="h-3 w-3" /> Dados demonstrativos</span>
-          )}
-          <span className="text-muted-foreground">Última atualização: {formatDateTime(lastUpdated)}</span>
-          {warning && <span className="text-muted-foreground italic">• {warning}</span>}
+        <TeamRowMini
+          team={match.awayTeam}
+          score={match.awayScore}
+          isWinner={match.winner === match.awayTeam?.id}
+        />
+      </div>
+      {match.date && (
+        <div className="mt-2 text-[10px] text-gray-400 text-right font-semibold">
+          {new Date(match.date).toLocaleString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
         </div>
-      </div>
-    </section>
-  );
-}
-
-function Tabs({ tab, setTab }: { tab: TabKey; setTab: (t: TabKey) => void }) {
-  return (
-    <div className="mb-6 overflow-x-auto -mx-4 px-4">
-      <div className="inline-flex gap-1 p-1 rounded-xl bg-card border border-border">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={cn(
-              "px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap",
-              tab === t.key
-                ? "bg-brand-green text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      )}
     </div>
   );
 }
 
-function SectionHeader({ title, icon }: { title: string; icon?: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-2 mb-3">
-      {icon && <span className="text-brand-yellow">{icon}</span>}
-      <h2 className="font-display text-2xl">{title}</h2>
-    </div>
-  );
-}
-
-function StatCard({ label, value, icon, accent }: { label: string; value: React.ReactNode; icon: React.ReactNode; accent: string }) {
-  return (
-    <div className="card-glass p-4 flex items-center gap-3">
-      <div className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-lg", accent)}>{icon}</div>
-      <div className="min-w-0">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-        <div className="font-display text-2xl leading-none truncate">{value}</div>
-      </div>
-    </div>
-  );
-}
-
-function DashboardSummary({
-  total, finished, upcoming, champion, lastUpdated,
+function TeamRowMini({
+  team,
+  score,
+  isWinner,
 }: {
-  total: number; finished: number; upcoming: number;
-  champion?: { name: string; flagUrl: string } | null; lastUpdated: Date | null;
+  team: any;
+  score: number | null;
+  isWinner: boolean;
 }) {
   return (
-    <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-      <StatCard label="Seleções" value={total} icon={<Flag className="h-5 w-5 text-brand-blue" />} accent="bg-brand-blue/15" />
-      <StatCard label="Finalizados" value={finished} icon={<CheckCircle2 className="h-5 w-5 text-brand-green" />} accent="bg-brand-green/15" />
-      <StatCard label="Próximos" value={upcoming} icon={<Calendar className="h-5 w-5 text-brand-yellow" />} accent="bg-brand-yellow/15" />
-      <StatCard
-        label="Campeão"
-        value={champion ? (
-          <span className="flex items-center gap-2">
-            <img src={champion.flagUrl} alt="" className="h-5 w-7 rounded-sm object-cover" />
-            <span className="truncate">{champion.name}</span>
-          </span>
-        ) : "A definir"}
-        icon={<Trophy className="h-5 w-5 text-brand-yellow" />}
-        accent="bg-brand-yellow/15"
-      />
+    <div className={cn("flex items-center justify-between gap-2", isWinner && "font-black")}>
+      <div className="flex items-center gap-1.5 min-w-0">
+        {team?.flagUrl && (
+          <img
+            src={team.flagUrl}
+            alt={team?.name}
+            className="h-4 w-6 object-cover rounded-sm shadow-sm"
+          />
+        )}
+        <span className={cn("text-xs truncate", isWinner ? "text-green-700" : "text-gray-700")}>
+          {team?.name ?? "A definir"}
+        </span>
+      </div>
+      <span className={cn("text-sm shrink-0", isWinner ? "text-green-700 font-black" : "text-gray-500")}>
+        {score ?? "–"}
+      </span>
     </div>
   );
 }

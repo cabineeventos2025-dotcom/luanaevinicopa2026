@@ -1,70 +1,57 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  Outlet,
-  Link,
-  createRootRouteWithContext,
-  useRouter,
-  HeadContent,
-  Scripts,
-} from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { Outlet, createRootRouteWithContext } from "@tanstack/react-router";
+import { useEffect } from "react";
 
-import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { ChannelConfigProvider } from "../contexts/ChannelConfigContext";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-amber-50 px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+        <div className="text-7xl mb-4">😅</div>
+        <h1 className="text-6xl font-black text-amber-500 mb-2">404</h1>
+        <h2 className="text-xl font-black text-gray-800 mb-2">Página não encontrada</h2>
+        <p className="text-sm text-gray-500 mb-6">
+          Esta página não existe ou foi movida. Volte para o início!
         </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Go home
-          </Link>
-        </div>
+        <a
+          href="/"
+          className="inline-flex items-center justify-center rounded-2xl bg-amber-500 px-6 py-3 text-sm font-black text-white hover:bg-amber-600 transition-colors shadow-md"
+        >
+          🏠 Voltar para o início
+        </a>
       </div>
     </div>
   );
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
-  const router = useRouter();
   useEffect(() => {
+    console.error(error);
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-amber-50 px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+        <div className="text-6xl mb-4">🛠️</div>
+        <h1 className="text-xl font-black text-gray-800 mb-2">Ops! Algo deu errado</h1>
+        <p className="text-sm text-gray-500 mb-6">
+          Ocorreu um erro inesperado. Você pode tentar novamente ou voltar para o início.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <div className="flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            onClick={reset}
+            className="inline-flex items-center justify-center rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-amber-600 transition-colors"
           >
-            Try again
+            Tentar novamente
           </button>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            Go home
+            Ir para o início
           </a>
         </div>
       </div>
@@ -73,58 +60,19 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Chaveamento Copa do Mundo" },
-      { name: "description", content: "Acompanhe em tempo real o caminho das seleções até a final da Copa do Mundo." },
-      { property: "og:title", content: "Chaveamento Copa do Mundo" },
-      { property: "og:description", content: "Acompanhe em tempo real o caminho das seleções até a final da Copa do Mundo." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Chaveamento Copa do Mundo" },
-      { name: "twitter:description", content: "Acompanhe em tempo real o caminho das seleções até a final da Copa do Mundo." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a548ce72-c027-4e4f-9301-9928427a7891/id-preview-2c76936f--f7e5c526-71ef-4c21-b35e-b50f90e5ab40.lovable.app-1782801074722.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a548ce72-c027-4e4f-9301-9928427a7891/id-preview-2c76936f--f7e5c526-71ef-4c21-b35e-b50f90e5ab40.lovable.app-1782801074722.png" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap",
-      },
-    ],
-  }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
-
-function RootShell({ children }: { children: ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <ChannelConfigProvider>
+        <Outlet />
+      </ChannelConfigProvider>
     </QueryClientProvider>
   );
 }

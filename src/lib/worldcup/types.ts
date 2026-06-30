@@ -12,6 +12,8 @@ export type Stage =
 export interface Team {
   id: string;
   name: string;
+  shortName?: string;
+  tla?: string;
   countryCode: string;
   flagUrl: string;
   group?: string;
@@ -40,6 +42,7 @@ export interface Match {
   status: MatchStatus;
   date: string;
   venue?: string;
+  city?: string;
   nextMatchId?: string | null;
   nextMatchSlot?: "home" | "away" | null;
 }

@@ -1,16 +1,18 @@
 import type { Team, Match, MatchStatus, Stage, WorldCupData, GroupStanding } from "@/lib/worldcup/types";
 
 // Endpoints / config
-const DEFAULT_PROXY_ENDPOINT = "/api/public/worldcup-data";
-const PROXY_ENDPOINT =
-  (import.meta.env.VITE_WORLDCUP_DATA_ENDPOINT as string | undefined) || DEFAULT_PROXY_ENDPOINT;
+// During development: Vite proxies /api/football-data → football-data.org (API key injected by vite.config.ts)
+// In production: if VITE_FOOTBALL_DATA_API_KEY is set, calls go directly to football-data.org
+const PROXY_ENDPOINT_MATCHES = `/api/football-data/competitions/${(import.meta.env.VITE_WORLD_CUP_COMPETITION_CODE as string | undefined) || "WC"}/matches?season=${(import.meta.env.VITE_WORLD_CUP_SEASON as string | undefined) || "2026"}`;
+const PROXY_ENDPOINT_TEAMS = `/api/football-data/competitions/${(import.meta.env.VITE_WORLD_CUP_COMPETITION_CODE as string | undefined) || "WC"}/teams?season=${(import.meta.env.VITE_WORLD_CUP_SEASON as string | undefined) || "2026"}`;
+const PROXY_ENDPOINT_STANDINGS = `/api/football-data/competitions/${(import.meta.env.VITE_WORLD_CUP_COMPETITION_CODE as string | undefined) || "WC"}/standings`;
 
 const DIRECT_API_URL = (import.meta.env.VITE_FOOTBALL_DATA_API_URL as string | undefined) || "https://api.football-data.org/v4";
 const DIRECT_API_KEY = import.meta.env.VITE_FOOTBALL_DATA_API_KEY as string | undefined;
 const COMPETITION = (import.meta.env.VITE_WORLD_CUP_COMPETITION_CODE as string | undefined) || "WC";
 const SEASON = (import.meta.env.VITE_WORLD_CUP_SEASON as string | undefined) || "2026";
 
-export const hasFootballDataOrgConfig = () => true; // proxy is always available
+export const hasFootballDataOrgConfig = () => Boolean(DIRECT_API_KEY);
 
 // ---------- low-level fetchers ----------
 
@@ -24,9 +26,20 @@ async function getJson(url: string, headers?: HeadersInit) {
 }
 
 async function fetchViaProxy(): Promise<{ matches: any; teams: any; standings: any }> {
-  console.log("[football-data] URL base:", PROXY_ENDPOINT, "(proxy)");
-  const data = await getJson(PROXY_ENDPOINT);
-  return data;
+  console.log("[football-data] Buscando via proxy Vite...");
+  const [matchesRes, teamsRes, standingsRes] = await Promise.allSettled([
+    getJson(PROXY_ENDPOINT_MATCHES),
+    getJson(PROXY_ENDPOINT_TEAMS),
+    getJson(PROXY_ENDPOINT_STANDINGS),
+  ]);
+
+  if (matchesRes.status === "rejected") throw matchesRes.reason;
+
+  return {
+    matches: matchesRes.value,
+    teams: teamsRes.status === "fulfilled" ? teamsRes.value : { teams: [] },
+    standings: standingsRes.status === "fulfilled" ? standingsRes.value : { standings: [] },
+  };
 }
 
 async function fetchDirect(): Promise<{ matches: any; teams: any; standings: any }> {

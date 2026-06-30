@@ -9,9 +9,27 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RegulamentoRouteImport } from './routes/regulamento'
+import { Route as RankingRouteImport } from './routes/ranking'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicWorldcupDataRouteImport } from './routes/api/public/worldcup-data'
 
+const RegulamentoRoute = RegulamentoRouteImport.update({
+  id: '/regulamento',
+  path: '/regulamento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RankingRoute = RankingRouteImport.update({
+  id: '/ranking',
+  path: '/ranking',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -25,32 +43,72 @@ const ApiPublicWorldcupDataRoute = ApiPublicWorldcupDataRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/ranking': typeof RankingRoute
+  '/regulamento': typeof RegulamentoRoute
   '/api/public/worldcup-data': typeof ApiPublicWorldcupDataRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/ranking': typeof RankingRoute
+  '/regulamento': typeof RegulamentoRoute
   '/api/public/worldcup-data': typeof ApiPublicWorldcupDataRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/ranking': typeof RankingRoute
+  '/regulamento': typeof RegulamentoRoute
   '/api/public/worldcup-data': typeof ApiPublicWorldcupDataRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/public/worldcup-data'
+  fullPaths:
+    '/' | '/admin' | '/ranking' | '/regulamento' | '/api/public/worldcup-data'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/public/worldcup-data'
-  id: '__root__' | '/' | '/api/public/worldcup-data'
+  to: '/' | '/admin' | '/ranking' | '/regulamento' | '/api/public/worldcup-data'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/ranking'
+    | '/regulamento'
+    | '/api/public/worldcup-data'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  RankingRoute: typeof RankingRoute
+  RegulamentoRoute: typeof RegulamentoRoute
   ApiPublicWorldcupDataRoute: typeof ApiPublicWorldcupDataRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/regulamento': {
+      id: '/regulamento'
+      path: '/regulamento'
+      fullPath: '/regulamento'
+      preLoaderRoute: typeof RegulamentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ranking': {
+      id: '/ranking'
+      path: '/ranking'
+      fullPath: '/ranking'
+      preLoaderRoute: typeof RankingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -70,8 +128,21 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  RankingRoute: RankingRoute,
+  RegulamentoRoute: RegulamentoRoute,
   ApiPublicWorldcupDataRoute: ApiPublicWorldcupDataRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
