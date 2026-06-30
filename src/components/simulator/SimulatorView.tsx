@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import type { WorldCupData } from "@/lib/worldcup/types";
-import { useChannelConfig } from "@/contexts/ChannelConfigContext";
 import { BracketSimulator } from "./BracketSimulator";
 import { advanceBracket, simulateWinner, resetSimMatch } from "@/lib/worldcup/bracketEngine";
 import { getRankingRepository } from "@/repositories";
@@ -13,7 +12,6 @@ import { toast } from "sonner";
 interface Props { realData: WorldCupData; }
 
 export function SimulatorView({ realData }: Props) {
-  const { config } = useChannelConfig();
   const [simMatches, setSimMatches] = useState(() => advanceBracket(realData.matches));
   const [generating, setGenerating] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -39,10 +37,10 @@ export function SimulatorView({ realData }: Props) {
   const total    = knockout.length;
   const pct      = total > 0 ? Math.round((chosen / total) * 100) : 0;
 
-  const handleSelect = useCallback((matchId: string, slot: "home" | "away", hs?: number, as_?: number) => {
+  const handleSelect = useCallback((matchId: string, slot: "home" | "away", hs?: number, as_?: number, hp?: number, ap?: number) => {
     const m = simMatches.find((x) => x.id === matchId);
-    if (!m || m.status === "finished") return;
-    setSimMatches((prev) => simulateWinner(prev, matchId, slot, hs, as_));
+    if (!m || (m.status === "finished" && !m.simulated)) return;
+    setSimMatches((prev) => simulateWinner(prev, matchId, slot, hs, as_, hp, ap));
   }, [simMatches]);
 
   const handleReset = () => {

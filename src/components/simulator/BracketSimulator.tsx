@@ -5,7 +5,7 @@ import { Trophy } from "lucide-react";
 
 interface Props {
   matches: Match[];
-  onSelectWinner: (matchId: string, slot: "home" | "away", homeScore?: number, awayScore?: number) => void;
+  onSelectWinner: (matchId: string, slot: "home" | "away", homeScore?: number, awayScore?: number, homePens?: number, awayPens?: number) => void;
   onReset: (matchId: string) => void;
 }
 
@@ -54,7 +54,7 @@ function TeamRow({
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Card de jogo — com inputs de placar e botões de escolha
+// Card de jogo — com inputs de placar, pênaltis e reset por jogo
 // ────────────────────────────────────────────────────────────────────────────
 function GameCard({ match, onSelectWinner, onReset }: {
   match: Match;
@@ -63,11 +63,18 @@ function GameCard({ match, onSelectWinner, onReset }: {
 }) {
   const [hs, setHs] = useState<string>("");
   const [as_, setAs] = useState<string>("");
+  const [showPens, setShowPens] = useState(false);
+  const [hp, setHp] = useState<string>("");
+  const [ap, setAp] = useState<string>("");
 
-  const isFinished = match.status === "finished";
-  const homeWins = !!match.winner && match.homeTeam?.id === match.winner;
-  const awayWins = !!match.winner && match.awayTeam?.id === match.winner;
-  const bothTeams = !!match.homeTeam && !!match.awayTeam;
+  // isFinished = resultado REAL (não simulado)
+  const isFinished   = match.status === "finished" && !match.simulated;
+  // isSimulated = escolha feita pelo usuário no simulador
+  const isSimulated  = !!match.simulated && !!match.winner;
+  const homeWins     = !!match.winner && match.homeTeam?.id === match.winner;
+  const awayWins     = !!match.winner && match.awayTeam?.id === match.winner;
+  const bothTeams    = !!match.homeTeam && !!match.awayTeam;
+  const hasAnyResult = isFinished || isSimulated;
 
   const dateStr = useMemo(() => {
     try {
@@ -79,13 +86,32 @@ function GameCard({ match, onSelectWinner, onReset }: {
     } catch { return ""; }
   }, [match.date]);
 
+  const clearInputs = () => { setHs(""); setAs(""); setHp(""); setAp(""); setShowPens(false); };
+
   const handleConfirmScore = () => {
     const h = parseInt(hs, 10);
     const a = parseInt(as_, 10);
     if (isNaN(h) || isNaN(a)) return;
-    const slot = h > a ? "home" : a > h ? "away" : "home";
-    onSelectWinner(match.id, slot, h, a);
-    setHs(""); setAs("");
+
+    if (h === a) {
+      // Empate → mostrar pênaltis
+      setShowPens(true);
+      return;
+    }
+
+    onSelectWinner(match.id, h > a ? "home" : "away", h, a);
+    clearInputs();
+  };
+
+  const handleConfirmPens = () => {
+    const h = parseInt(hs, 10);
+    const a = parseInt(as_, 10);
+    const ph = parseInt(hp, 10);
+    const pa = parseInt(ap, 10);
+    if (isNaN(h) || isNaN(a) || isNaN(ph) || isNaN(pa)) return;
+    if (ph === pa) return; // pênaltis também empatados
+    onSelectWinner(match.id, ph > pa ? "home" : "away", h, a, ph, pa);
+    clearInputs();
   };
 
   const handleQuick = (slot: "home" | "away") => {
@@ -95,88 +121,142 @@ function GameCard({ match, onSelectWinner, onReset }: {
   return (
     <div className={cn(
       "rounded-xl border bg-white shadow-sm overflow-hidden w-full",
-      isFinished ? "border-gray-200 opacity-95" : bothTeams ? "border-amber-300" : "border-gray-200",
-      (homeWins || awayWins) && "ring-1 ring-green-400",
+      isFinished ? "border-green-200 opacity-95"
+        : isSimulated ? "border-green-300 ring-1 ring-green-300"
+        : bothTeams ? "border-amber-300"
+        : "border-gray-200",
     )}>
       {/* Cabeçalho do card */}
       <div className={cn(
         "flex items-center justify-between px-2 py-1 border-b",
-        isFinished ? "bg-green-50 border-green-100" : bothTeams ? "bg-amber-50 border-amber-100" : "bg-gray-50 border-gray-100"
+        isFinished ? "bg-green-50 border-green-100"
+          : isSimulated ? "bg-green-50 border-green-200"
+          : bothTeams ? "bg-amber-50 border-amber-100"
+          : "bg-gray-50 border-gray-100"
       )}>
         <span className="text-[9px] text-gray-400 font-medium">{dateStr}</span>
         <div className="flex items-center gap-1">
-          {/* Botão de reset por jogo */}
-          {(homeWins || awayWins) && !isFinished && (
+          {/* Botão ↺ reset — só para jogos SIMULADOS (não reais) */}
+          {isSimulated && (
             <button
               onClick={() => onReset(match.id)}
               title="Resetar este jogo"
-              className="text-[9px] text-gray-400 hover:text-red-500 transition-colors px-1 rounded hover:bg-red-50"
+              className="text-[9px] text-gray-400 hover:text-red-500 transition-colors px-1 rounded hover:bg-red-50 font-bold"
             >
               ↺
             </button>
           )}
           {isFinished
             ? <span className="text-[9px] font-black text-green-700">FIM ✓</span>
-            : bothTeams
-              ? <span className="text-[9px] font-bold text-amber-600">Palpite ↓</span>
-              : <span className="text-[9px] text-gray-300">Aguardando</span>
+            : isSimulated
+              ? <span className="text-[9px] font-black text-green-700">✓ Palpite</span>
+              : bothTeams
+                ? <span className="text-[9px] font-bold text-amber-600">Palpite ↓</span>
+                : <span className="text-[9px] text-gray-300">Aguardando</span>
           }
         </div>
       </div>
 
       {/* Times */}
       <div className="px-1 pt-1 space-y-0.5">
-        <TeamRow team={match.homeTeam} score={match.homeScore} pens={match.penaltiesHome}
+        <TeamRow team={match.homeTeam} score={match.homeScore} pens={match.penaltiesHome ?? null}
           isWinner={homeWins} isLoser={awayWins} />
-        <TeamRow team={match.awayTeam} score={match.awayScore} pens={match.penaltiesAway}
+        <TeamRow team={match.awayTeam} score={match.awayScore} pens={match.penaltiesAway ?? null}
           isWinner={awayWins} isLoser={homeWins} />
       </div>
 
-      {/* Inputs de placar + botões (só para jogos não finalizados com ambos times) */}
-      {!isFinished && bothTeams && (
+      {/* Inputs — só para jogos não finalizados (reais) com ambos times */}
+      {!hasAnyResult && bothTeams && (
         <div className="px-1.5 pb-1.5 pt-1.5 space-y-1.5 bg-amber-50 border-t border-amber-100">
-          {/* Inputs de placar */}
-          <div className="flex items-center justify-center gap-1">
-            <input
-              type="number" min={0} max={20}
-              value={hs}
-              onChange={(e) => setHs(e.target.value)}
-              placeholder="0"
-              className="w-10 h-7 text-center rounded-lg border-2 border-amber-300 text-sm font-black text-gray-800 focus:border-amber-500 focus:outline-none bg-white"
-            />
-            <span className="text-[11px] font-black text-gray-400">×</span>
-            <input
-              type="number" min={0} max={20}
-              value={as_}
-              onChange={(e) => setAs(e.target.value)}
-              placeholder="0"
-              className="w-10 h-7 text-center rounded-lg border-2 border-amber-300 text-sm font-black text-gray-800 focus:border-amber-500 focus:outline-none bg-white"
-            />
-          </div>
-          {/* Confirmar placar (se ambos preenchidos) */}
-          {hs !== "" && as_ !== "" && (
-            <button
-              onClick={handleConfirmScore}
-              className="w-full rounded-lg bg-amber-500 py-1 text-[10px] font-black text-white hover:bg-amber-600 transition-colors"
-            >
-              ✓ Confirmar {hs} × {as_}
-            </button>
-          )}
-          {/* OU botões rápidos de escolha sem placar */}
-          {(hs === "" || as_ === "") && (
-            <div className="flex gap-1">
-              <button
-                onClick={() => handleQuick("home")}
-                className="flex-1 rounded-lg bg-white border border-blue-300 py-1 text-[9px] font-bold text-blue-700 hover:bg-blue-50 transition-colors truncate px-0.5"
-              >
-                {match.homeTeam?.name?.split(" ")[0]} ▲
-              </button>
-              <span className="text-[8px] text-gray-300 self-center">ou</span>
-              <button
-                onClick={() => handleQuick("away")}
-                className="flex-1 rounded-lg bg-white border border-orange-300 py-1 text-[9px] font-bold text-orange-700 hover:bg-orange-50 transition-colors truncate px-0.5"
-              >
-                ▲ {match.awayTeam?.name?.split(" ")[0]}
+          {!showPens ? (
+            <>
+              {/* Linha de placar */}
+              <div className="flex items-center justify-center gap-1">
+                <input
+                  type="number" min={0} max={20} value={hs}
+                  onChange={(e) => setHs(e.target.value)}
+                  placeholder="0"
+                  className="w-10 h-7 text-center rounded-lg border-2 border-amber-300 text-sm font-black text-gray-800 focus:border-amber-500 focus:outline-none bg-white"
+                />
+                <span className="text-[11px] font-black text-gray-400">×</span>
+                <input
+                  type="number" min={0} max={20} value={as_}
+                  onChange={(e) => setAs(e.target.value)}
+                  placeholder="0"
+                  className="w-10 h-7 text-center rounded-lg border-2 border-amber-300 text-sm font-black text-gray-800 focus:border-amber-500 focus:outline-none bg-white"
+                />
+              </div>
+              {/* Confirmar placar */}
+              {hs !== "" && as_ !== "" && (
+                <button
+                  onClick={handleConfirmScore}
+                  className="w-full rounded-lg bg-amber-500 py-1 text-[10px] font-black text-white hover:bg-amber-600 transition-colors"
+                >
+                  {parseInt(hs) === parseInt(as_) && !isNaN(parseInt(hs))
+                    ? `⚡ Empate ${hs}×${as_} — Definir pênaltis →`
+                    : `✓ Confirmar ${hs}×${as_}`
+                  }
+                </button>
+              )}
+              {/* Botões rápidos */}
+              {(hs === "" || as_ === "") && (
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => handleQuick("home")}
+                    className="flex-1 rounded-lg bg-white border border-blue-300 py-1 text-[9px] font-bold text-blue-700 hover:bg-blue-50 transition-colors truncate px-0.5"
+                  >
+                    {match.homeTeam?.name?.split(" ")[0]} ▲
+                  </button>
+                  <span className="text-[8px] text-gray-300 self-center">ou</span>
+                  <button
+                    onClick={() => handleQuick("away")}
+                    className="flex-1 rounded-lg bg-white border border-orange-300 py-1 text-[9px] font-bold text-orange-700 hover:bg-orange-50 transition-colors truncate px-0.5"
+                  >
+                    ▲ {match.awayTeam?.name?.split(" ")[0]}
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            /* ── Pênaltis ── */
+            <div className="space-y-1">
+              <div className="text-[9px] font-black text-center text-amber-700">
+                ⚡ Empate {hs}×{as_} — Placar nos Pênaltis:
+              </div>
+              <div className="flex items-center justify-center gap-1">
+                <div className="text-center">
+                  <div className="text-[8px] text-gray-400 truncate max-w-[50px]">{match.homeTeam?.name?.split(" ")[0]}</div>
+                  <input
+                    type="number" min={0} max={20} value={hp}
+                    onChange={(e) => setHp(e.target.value)}
+                    placeholder="0"
+                    className="w-10 h-7 text-center rounded-lg border-2 border-blue-300 text-sm font-black text-gray-800 focus:border-blue-500 focus:outline-none bg-white"
+                  />
+                </div>
+                <span className="text-[11px] font-black text-gray-400 mt-3">×</span>
+                <div className="text-center">
+                  <div className="text-[8px] text-gray-400 truncate max-w-[50px]">{match.awayTeam?.name?.split(" ")[0]}</div>
+                  <input
+                    type="number" min={0} max={20} value={ap}
+                    onChange={(e) => setAp(e.target.value)}
+                    placeholder="0"
+                    className="w-10 h-7 text-center rounded-lg border-2 border-orange-300 text-sm font-black text-gray-800 focus:border-orange-500 focus:outline-none bg-white"
+                  />
+                </div>
+              </div>
+              {hp !== "" && ap !== "" && parseInt(hp) !== parseInt(ap) && (
+                <button
+                  onClick={handleConfirmPens}
+                  className="w-full rounded-lg bg-green-500 py-1 text-[10px] font-black text-white hover:bg-green-600 transition-colors"
+                >
+                  ✓ Confirmar pênaltis {hp}×{ap}
+                </button>
+              )}
+              {hp !== "" && ap !== "" && parseInt(hp) === parseInt(ap) && (
+                <p className="text-[9px] text-center text-red-500">Pênaltis não podem empatar!</p>
+              )}
+              <button onClick={clearInputs} className="w-full text-[9px] text-gray-400 hover:text-gray-600">
+                ← Voltar
               </button>
             </div>
           )}

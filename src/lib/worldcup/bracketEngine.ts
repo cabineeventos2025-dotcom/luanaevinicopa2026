@@ -114,7 +114,9 @@ export function simulateWinner(
   matchId: string,
   slot: "home" | "away",
   homeScore?: number,
-  awayScore?: number
+  awayScore?: number,
+  homePens?: number,
+  awayPens?: number,
 ): Match[] {
   const copy = matches.map((m) => ({ ...m }));
   const byId = new Map(copy.map((m) => [m.id, m]));
@@ -125,6 +127,10 @@ export function simulateWinner(
   if (homeScore !== undefined && awayScore !== undefined) {
     m.homeScore = homeScore;
     m.awayScore = awayScore;
+    if (homePens !== undefined && awayPens !== undefined) {
+      m.penaltiesHome = homePens;
+      m.penaltiesAway = awayPens;
+    }
   } else {
     // Placar sintético se nenhum foi informado
     m.homeScore = slot === "home" ? 1 : 0;
@@ -132,6 +138,7 @@ export function simulateWinner(
   }
   m.status = "finished";
   m.winner = slot === "home" ? m.homeTeam.id : m.awayTeam.id;
+  m.simulated = true; // marca como escolha do simulador (não resultado real)
 
   // Limpar tudo que depende deste jogo para frente
   const toClear = new Set<string>();
@@ -154,15 +161,20 @@ export function simulateWinner(
     f.winner = null;
   }
 
-  // Limpar 3º lugar
-  const third = copy.find((x) => x.stage === "THIRD_PLACE");
-  if (third) {
-    third.homeTeam = null;
-    third.awayTeam = null;
-    third.homeScore = null;
-    third.awayScore = null;
-    third.status = "scheduled";
-    third.winner = null;
+  // Limpar 3º lugar (SOMENTE se não for o próprio jogo do 3º lugar sendo simulado)
+  // Bug anterior: when matchId==="3rd", o código limpava `third` que é o mesmo objeto `m`,
+  // zerando o winner que acabou de ser definido.
+  if (matchId !== "3rd") {
+    const third = copy.find((x) => x.stage === "THIRD_PLACE");
+    if (third) {
+      third.homeTeam = null;
+      third.awayTeam = null;
+      third.homeScore = null;
+      third.awayScore = null;
+      third.status = "scheduled";
+      third.winner = null;
+      third.simulated = undefined;
+    }
   }
 
   return advanceBracket(copy);
@@ -186,6 +198,7 @@ export function resetSimMatch(matches: Match[], matchId: string): Match[] {
   target.penaltiesHome = null;
   target.penaltiesAway = null;
   target.status = "scheduled";
+  target.simulated = undefined;
 
   // Limpar em cadeia para frente
   const collectForward = (mid: string): string[] => {

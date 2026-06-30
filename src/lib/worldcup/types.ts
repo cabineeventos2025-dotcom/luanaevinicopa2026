@@ -45,6 +45,7 @@ export interface Match {
   city?: string;
   nextMatchId?: string | null;
   nextMatchSlot?: "home" | "away" | null;
+  simulated?: boolean; // true when resultado foi definido pelo simulador (não real)
 }
 
 export interface BracketRound {

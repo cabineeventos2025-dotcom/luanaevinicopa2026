@@ -20,21 +20,28 @@ const stageNames: Record<string, string> = {
 };
 
 /**
- * Tenta carregar imagem via fetch para uso no PDF.
- * Retorna null em caso de falha (CORS etc.).
+ * Carrega imagem via HTMLImageElement + canvas (melhor suporte CORS para flagcdn.com).
+ * Retorna base64 data URL ou null em caso de falha.
  */
 async function fetchBase64(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url, { mode: "cors" });
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror   = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch { return null; }
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width  = img.naturalWidth  || 160;
+        canvas.height = img.naturalHeight || 100;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { resolve(null); return; }
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      } catch { resolve(null); }
+    };
+    img.onerror = () => resolve(null);
+    // timestamp para evitar cache opaco que bloqueia crossOrigin
+    img.src = url.includes("?") ? url : url + "?t=1";
+  });
 }
 
 /**

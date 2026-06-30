@@ -10,7 +10,6 @@ import { Header } from "@/components/layout/Header";
 import { Navigation } from "@/components/layout/Navigation";
 import { YouTubeButton } from "@/components/common/YouTubeButton";
 import { SimulatorProvider } from "@/contexts/SimulatorContext";
-import { useChannelConfig } from "@/contexts/ChannelConfigContext";
 import type { TabKey } from "@/types/navigation";
 import {
   Trophy,
@@ -20,11 +19,10 @@ import {
   CircleAlert,
   Loader2,
   CheckCircle2,
-  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { ChannelConfig } from "@/components/channel/ChannelConfig";
+import { AdminPanel } from "@/components/admin/AdminPanel";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -43,7 +41,7 @@ function formatDateTime(d: Date | null) {
 function HomePage() {
   const { data, source, warning, loading, refreshing, lastUpdated, refresh } = useWorldCupData();
   const [tab, setTab] = useState<TabKey>("overview");
-  const { config } = useChannelConfig();
+  const [showAdmin, setShowAdmin] = useState(false);
 
   const stats = useMemo(() => {
     if (!data) return { total: 0, finished: 0, upcoming: 0, next: [] as any[] };
@@ -75,20 +73,12 @@ function HomePage() {
                 <div className="min-w-0">
                   {/* Logo + Channel */}
                   <div className="flex items-center gap-3 mb-3">
-                    {config.logoUrl ? (
-                      <img
-                        src={config.logoUrl}
-                        alt={config.channelName}
-                        className="h-12 w-12 rounded-xl object-cover ring-2 ring-amber-400 shadow-md"
-                      />
-                    ) : (
-                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-md">
-                        <Trophy className="h-6 w-6 text-white" />
-                      </div>
-                    )}
+                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-md">
+                      <Trophy className="h-6 w-6 text-white" />
+                    </div>
                     <div>
                       <div className="text-xs font-black uppercase tracking-widest text-amber-600">
-                        {config.channelName}
+                        Luana Queiroz e Família
                       </div>
                       <div className="text-xs text-gray-400">Copa do Mundo 2026</div>
                     </div>
@@ -99,7 +89,7 @@ function HomePage() {
                     <span className="text-green-600">2026</span> 🏆
                   </h1>
                   <p className="text-base text-gray-500 max-w-prose">
-                    {config.tagline}
+                    Simule o chaveamento, faça seus palpites e compita com a família toda!
                   </p>
                 </div>
 
@@ -269,14 +259,9 @@ function HomePage() {
                     ⚽ Ir para o Simulador
                   </button>
                 </div>
-
-                {/* Channel config */}
-                <section>
-                  <SectionHeader title="Personalização do Canal" icon={<Star className="h-5 w-5" />} />
-                  <ChannelConfig />
-                </section>
               </div>
             )}
+
 
             {/* Groups */}
             {tab === "groups" && (
@@ -335,14 +320,29 @@ function HomePage() {
             </a>
           </div>
           <p className="text-xs text-gray-400">
-            Palpite da Copa 2026 • {config.channelName} •{" "}
+            Palpite da Copa 2026 • Luana Queiroz e Família •{" "}
             {source === "football-data.org" ? "Dados via football-data.org" : "Dados demonstrativos"}
           </p>
           <p className="text-xs text-gray-400 mt-1">
             Esta é uma brincadeira familiar. Não envolve pagamento ou qualquer valor financeiro.
           </p>
+          <button
+            onClick={() => setShowAdmin(true)}
+            className="mt-3 text-[10px] text-gray-300 hover:text-amber-500 transition-colors"
+            id="footer-admin-btn"
+          >
+            ⚙️ Atualizar placares
+          </button>
         </div>
       </footer>
+
+      {/* Admin Panel Modal */}
+      {showAdmin && (
+        <AdminPanel
+          onClose={() => setShowAdmin(false)}
+          onScoresUpdated={() => { refresh(); }}
+        />
+      )}
     </div>
   );
 }

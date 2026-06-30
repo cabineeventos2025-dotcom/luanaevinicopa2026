@@ -95,7 +95,7 @@ const r32: R[] = [
   {id:"r32-01",home:"zaf",away:"can",hs:0,as_:1,          date:"2026-06-28T22:00:00Z",done:true, next:"r16-01",slot:"home"}, // 28/06 19h BRT
   {id:"r32-04",home:"ned",away:"mar",hs:1,as_:1,ph:2,pa:3,date:"2026-06-29T22:00:00Z",done:true, next:"r16-01",slot:"away"}, // 29/06 19h BRT
   {id:"r32-03",home:"ger",away:"par",hs:1,as_:1,ph:3,pa:4,date:"2026-06-29T22:00:00Z",done:true, next:"r16-02",slot:"home"}, // 29/06 19h BRT
-  {id:"r32-05",home:"fra",away:"swe",hs:0,as_:0,ph:5,pa:4,date:"2026-06-30T21:00:00Z",done:true, next:"r16-02",slot:"away"}, // 30/06 18h BRT
+  {id:"r32-05",home:"fra",away:"swe",hs:3,as_:0,          date:"2026-06-30T21:00:00Z",done:true, next:"r16-02",slot:"away"}, // 30/06 18h BRT: França 3×0 Suécia
   {id:"r32-02",home:"bra",away:"jpn",hs:2,as_:1,          date:"2026-06-29T22:00:00Z",done:true, next:"r16-03",slot:"home"}, // 29/06 19h BRT
   {id:"r32-06",home:"civ",away:"nor",hs:1,as_:2,          date:"2026-06-30T17:00:00Z",done:true, next:"r16-03",slot:"away"}, // 30/06 14h BRT
   {id:"r32-07",home:"mex",away:"ecu",hs:null,as_:null,     date:"2026-07-01T01:00:00Z",done:false,next:"r16-04",slot:"home"}, // 30/06 22h BRT
