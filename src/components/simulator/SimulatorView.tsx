@@ -1,99 +1,65 @@
 import { useEffect, useState } from "react";
 import type { WorldCupData } from "@/lib/worldcup/types";
-import type { Stage } from "@/lib/worldcup/types";
 import { useSimulator } from "@/contexts/SimulatorContext";
 import { useChannelConfig } from "@/contexts/ChannelConfigContext";
-import { SimulatorCard } from "./SimulatorCard";
 import { ParticipantForm } from "./ParticipantForm";
 import { ChampionCelebration } from "./ChampionCelebration";
+import { DoubleSidedBracket } from "@/components/worldcup/DoubleSidedBracket";
 import { generatePredictionPDF } from "@/utils/pdfExport";
 import { generateCode, generateHash } from "@/utils/hashUtils";
 import { nowBrazil, formatBrazil } from "@/utils/dateUtils";
 import { getRankingRepository } from "@/repositories";
-import { RotateCcw, Info } from "lucide-react";
+import { RotateCcw, Info, Trophy, Send, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import type { BracketRound } from "@/lib/worldcup/types";
-
-const STAGE_NAMES: Record<Stage, string> = {
-  GROUP_STAGE: "Fase de Grupos",
-  LAST_32: "Fase de 32",
-  LAST_16: "Oitavas de Final",
-  QUARTER_FINALS: "Quartas de Final",
-  SEMI_FINALS: "Semifinais",
-  THIRD_PLACE: "Disputa de 3º Lugar",
-  FINAL: "Final",
-};
-
-const STAGE_EMOJI: Record<Stage, string> = {
-  GROUP_STAGE: "📊",
-  LAST_32: "🔵",
-  LAST_16: "⚽",
-  QUARTER_FINALS: "🔥",
-  SEMI_FINALS: "⭐",
-  THIRD_PLACE: "🥉",
-  FINAL: "🏆",
-};
-
-const BRACKET_ORDER: Stage[] = [
-  "LAST_32",
-  "LAST_16",
-  "QUARTER_FINALS",
-  "SEMI_FINALS",
-  "THIRD_PLACE",
-  "FINAL",
-];
+import { simulateWinner } from "@/lib/worldcup/bracketEngine";
 
 interface SimulatorViewProps {
   realData: WorldCupData;
 }
 
 export function SimulatorView({ realData }: SimulatorViewProps) {
-  const { state, initSimulator, reset, buildPredictionMatches, setSavedPrediction } =
-    useSimulator();
+  const { state, initSimulator, reset, buildPredictionMatches, setSavedPrediction } = useSimulator();
   const { config } = useChannelConfig();
   const [generating, setGenerating] = useState(false);
+  const [simMatches, setSimMatches] = useState(realData.matches);
+  const [saved, setSaved] = useState(false);
 
-  // Initialize simulator with real data
   useEffect(() => {
     initSimulator(realData);
+    setSimMatches(realData.matches);
+    setSaved(false);
   }, [realData, initSimulator]);
 
-  if (!state.simData) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-4xl animate-spin">⚽</div>
-      </div>
-    );
-  }
+  // Campeão = vencedor da Final
+  const finalMatch = simMatches.find((m) => m.id === "final");
+  const champion = finalMatch?.winner
+    ? simMatches.flatMap((m) => [m.homeTeam, m.awayTeam]).find((t) => t?.id === finalMatch.winner) ?? null
+    : null;
 
-  const champion = state.simData.champion;
-
-  // Build bracket rounds for display
-  const bracketRounds: BracketRound[] = [];
-  for (const stage of BRACKET_ORDER) {
-    const stageMatches = state.simData.matches.filter((m) => m.stage === stage);
-    if (stageMatches.length > 0) {
-      bracketRounds.push({
-        id: stage,
-        name: STAGE_NAMES[stage],
-        stage,
-        matches: stageMatches.sort((a, b) => a.id.localeCompare(b.id)),
-      });
-    }
-  }
-
-  const handleReset = () => {
-    reset();
-    toast.success("Palpite resetado! Comece de novo 🔄");
+  // Selecionou vencedor de um jogo do simulador
+  const handleSelectWinner = (matchId: string, slot: "home" | "away") => {
+    const match = simMatches.find((m) => m.id === matchId);
+    if (!match) return;
+    // Jogos já finalizados (com resultado real) não podem ser alterados
+    if (match.status === "finished") return;
+    const updated = simulateWinner(simMatches, matchId, slot);
+    setSimMatches(updated);
   };
 
-  const handleSaveAndGeneratePDF = async () => {
+  const handleReset = () => {
+    setSimMatches(realData.matches);
+    setSaved(false);
+    reset();
+    toast.success("Palpite resetado! Comece do zero 🔄");
+  };
+
+  const handleSave = async () => {
     if (!state.participantName || !state.participantCity) {
-      toast.error("Preencha seus dados antes de gerar o PDF.");
+      toast.error("Preencha seu nome e cidade antes de palpitar.");
       return;
     }
     if (!champion) {
-      toast.error("Escolha um campeão antes de gerar o PDF.");
+      toast.error("Complete o chaveamento até escolher um campeão! 🏆");
       return;
     }
 
@@ -118,7 +84,6 @@ export function SimulatorView({ realData }: SimulatorViewProps) {
       });
 
       const code = generateCode();
-
       const prediction = {
         code,
         participant: { name: state.participantName, city: state.participantCity },
@@ -138,19 +103,20 @@ export function SimulatorView({ realData }: SimulatorViewProps) {
         termsAccepted: state.termsAccepted,
       };
 
-      // Save to repository
+      // Salvar no banco (Supabase ou LocalStorage)
       try {
         const repo = getRankingRepository();
         await repo.savePrediction(prediction);
-        toast.success("Palpite salvo no ranking! 🎉");
+        setSaved(true);
+        toast.success(`Palpite salvo no Ranking! 🎉 Código: ${code}`, { duration: 6000 });
       } catch (e) {
-        console.error("[SimulatorView] Erro ao salvar palpite:", e);
-        toast.error("Não foi possível salvar o palpite online. Gerando PDF...");
+        console.error("[SimulatorView] Erro ao salvar:", e);
+        toast.error("Não foi possível salvar online. Tente novamente.");
       }
 
       setSavedPrediction(prediction);
 
-      // Generate PDF
+      // Gerar PDF
       await generatePredictionPDF(prediction, {
         channelName: config.channelName,
         logoUrl: config.logoUrl,
@@ -159,30 +125,29 @@ export function SimulatorView({ realData }: SimulatorViewProps) {
         secondaryColor: config.secondaryColor,
       });
 
-      toast.success("PDF gerado com sucesso! 📄");
+      toast.success("PDF gerado! Compartilhe com a família 📄");
     } catch (e) {
-      console.error("[SimulatorView] Erro ao gerar PDF:", e);
-      toast.error("Erro ao gerar PDF. Tente novamente.");
+      console.error("[SimulatorView] Erro:", e);
+      toast.error("Erro ao processar palpite. Tente novamente.");
     } finally {
       setGenerating(false);
     }
   };
 
+  // Conta quantos jogos foram escolhidos
+  const totalKnockout = simMatches.filter((m) => m.stage !== "GROUP_STAGE").length;
+  const chosen = simMatches.filter((m) => m.stage !== "GROUP_STAGE" && m.winner).length;
+  const progress = totalKnockout > 0 ? Math.round((chosen / totalKnockout) * 100) : 0;
+
   return (
     <div className="space-y-6">
-      {/* Hero section */}
-      <div className="rounded-3xl bg-gradient-to-br from-amber-50 via-yellow-50 to-green-50 border-2 border-amber-200 p-6 shadow-md">
-        <div className="flex items-start justify-between gap-4 mb-4">
+      {/* ── Hero ── */}
+      <div className="rounded-3xl bg-gradient-to-br from-amber-50 via-yellow-50 to-green-50 border-2 border-amber-200 p-5 shadow-md">
+        <div className="flex items-start justify-between gap-4 mb-3">
           <div>
-            <h2 className="text-3xl font-black text-gray-900 mb-1">
-              ✨ Simulador da Copa
-            </h2>
-            <p className="text-base font-bold text-amber-600 mb-2">
-              Quem você acha que vai ser campeão da Copa?
-            </p>
-            <p className="text-sm text-gray-500 max-w-xl">
-              Clique nas seleções vencedoras, escolha os placares e monte o caminho até a grande final.
-              No fim, gere um PDF com seu palpite para guardar ou compartilhar com a família.
+            <h2 className="text-2xl font-black text-gray-900 mb-1">✨ Meu Chaveamento da Copa</h2>
+            <p className="text-sm text-amber-700 font-semibold">
+              Clique no time que você acha que vai vencer cada jogo. O chaveamento avança automaticamente!
             </p>
           </div>
           <button
@@ -190,49 +155,114 @@ export function SimulatorView({ realData }: SimulatorViewProps) {
             id="simulator-reset-btn"
             className="shrink-0 flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors shadow-sm"
           >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Resetar
+            <RotateCcw className="h-3.5 w-3.5" /> Resetar
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-100 rounded-xl p-3">
+        {/* Barra de progresso */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>{chosen} de {totalKnockout} jogos escolhidos</span>
+            <span className="font-bold text-amber-600">{progress}%</span>
+          </div>
+          <div className="h-2.5 rounded-full bg-gray-200 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-amber-400 to-green-500 transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-100 rounded-xl p-3 mt-3">
           <Info className="h-4 w-4 shrink-0" />
           <span>
-            Este simulador é separado do chaveamento oficial. Suas escolhas não afetam os dados reais.
+            Jogos já realizados (com resultado real) são mostrados com placar — não podem ser alterados.
+            Os próximos jogos são seu palpite!
           </span>
         </div>
       </div>
 
-      {/* Participant form or champion celebration */}
-      {!state.formSubmitted ? (
-        <ParticipantForm onConfirm={() => {}} />
-      ) : champion ? (
+      {/* ── Formulário de participante ── */}
+      {!state.formSubmitted && (
+        <div className="rounded-2xl bg-white border-2 border-amber-200 p-5 shadow-sm">
+          <h3 className="text-lg font-black text-gray-800 mb-4">👤 Seus dados</h3>
+          <ParticipantForm onConfirm={() => {}} />
+        </div>
+      )}
+
+      {/* ── Chaveamento de 2 lados ── */}
+      <div className="rounded-2xl bg-white border border-gray-200 p-4 shadow-sm overflow-hidden">
+        <div className="flex items-center gap-2 mb-4">
+          <Trophy className="h-5 w-5 text-amber-500" />
+          <h3 className="text-lg font-black text-gray-800">Chaveamento da Copa 2026</h3>
+          <span className="text-xs text-gray-400 ml-auto">← clique no time que vai vencer →</span>
+        </div>
+        <DoubleSidedBracket
+          matches={simMatches}
+          onSelectWinner={handleSelectWinner}
+          readonly={false}
+        />
+      </div>
+
+      {/* ── Campeão escolhido ── */}
+      {champion && (
         <ChampionCelebration
           champion={champion}
           predictionCode={state.savedPrediction?.code}
-          onGeneratePDF={handleSaveAndGeneratePDF}
+          onGeneratePDF={handleSave}
           generating={generating}
         />
-      ) : null}
-
-      {/* Bracket */}
-      {state.formSubmitted && (
-        <div className="space-y-8">
-          {bracketRounds.map((round) => (
-            <section key={round.id} id={`sim-round-${round.id}`}>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-2xl">{STAGE_EMOJI[round.stage]}</span>
-                <h3 className="text-xl font-black text-gray-800">{round.name}</h3>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {round.matches.map((m) => (
-                  <SimulatorCard key={m.id} match={m} />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
       )}
+
+      {/* ── Botão de Palpitar ── */}
+      <div className="rounded-3xl bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-300 p-6 shadow-md">
+        <div className="flex flex-col items-center gap-4 text-center">
+          {saved ? (
+            <>
+              <CheckCircle2 className="h-12 w-12 text-green-500" />
+              <div>
+                <div className="text-xl font-black text-green-700">Palpite enviado! 🎉</div>
+                <p className="text-sm text-green-600 mt-1">
+                  Você já está no Ranking da Família. Veja como você se saiu!
+                </p>
+              </div>
+              <a
+                href="/ranking"
+                className="inline-flex items-center gap-2 rounded-2xl bg-green-500 px-8 py-3 text-base font-black text-white hover:bg-green-600 transition-all hover:scale-105 shadow-lg"
+              >
+                🏅 Ver Ranking da Família
+              </a>
+            </>
+          ) : (
+            <>
+              <div className="text-4xl">⚽🏆</div>
+              <div>
+                <div className="text-xl font-black text-gray-800">Pronto para palpitar?</div>
+                <p className="text-sm text-gray-500 mt-1">
+                  {!champion
+                    ? "Complete o chaveamento escolhendo um campeão para poder enviar."
+                    : `Seu campeão: 🏆 ${champion.name} — Clique para salvar no Ranking!`}
+                </p>
+              </div>
+              <button
+                onClick={handleSave}
+                disabled={!champion || generating || !state.formSubmitted}
+                id="simulator-palpitar-btn"
+                className="inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 px-10 py-4 text-lg font-black text-white shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {generating ? (
+                  <><span className="animate-spin">⚽</span> Salvando...</>
+                ) : (
+                  <><Send className="h-5 w-5" /> Enviar Palpite & Gerar PDF</>
+                )}
+              </button>
+              {!state.formSubmitted && (
+                <p className="text-xs text-gray-400">Preencha seus dados acima primeiro</p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

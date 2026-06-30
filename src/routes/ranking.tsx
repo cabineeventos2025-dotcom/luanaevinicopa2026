@@ -3,10 +3,11 @@ import { useEffect, useState } from "react";
 import { RankingTable } from "@/components/ranking/RankingTable";
 import { getRankingRepository } from "@/repositories";
 import type { RankingEntry } from "@/types/prediction";
-import { RefreshCw, Trophy, Users } from "lucide-react";
+import { RefreshCw, Trophy, Users, Share2, Copy, Check } from "lucide-react";
 import { YouTubeButton } from "@/components/common/YouTubeButton";
 import { Header } from "@/components/layout/Header";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/ranking")({
   component: RankingPage,
@@ -53,21 +54,40 @@ function RankingPage() {
           <p className="text-sm text-gray-500 max-w-lg mx-auto mb-6">
             Monte seu chaveamento, escolha os placares e acompanhe sua pontuação conforme os jogos acontecem.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <button
-              onClick={loadRanking}
-              disabled={loading}
-              id="ranking-refresh-btn"
-              className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white hover:bg-amber-600 disabled:opacity-60 transition-colors"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              Atualizar
-            </button>
-            {lastUpdated && (
-              <span className="text-xs text-gray-400">
-                Atualizado: {lastUpdated.toLocaleTimeString("pt-BR")}
+          {/* Caixa de link público para compartilhar */}
+          <div className="mt-4 flex flex-col items-center gap-3">
+            <div className="flex items-center gap-2 rounded-2xl bg-white border-2 border-amber-300 px-4 py-2.5 shadow-sm max-w-sm w-full">
+              <Share2 className="h-4 w-4 text-amber-500 shrink-0" />
+              <span className="text-sm font-bold text-gray-600 truncate flex-1" id="ranking-public-url">
+                {typeof window !== "undefined" ? window.location.origin + "/ranking" : "luanaevinicopa2026.vercel.app/ranking"}
               </span>
-            )}
+              <button
+                onClick={() => {
+                  const url = typeof window !== "undefined" ? window.location.origin + "/ranking" : "";
+                  navigator.clipboard.writeText(url).then(() => toast.success("Link copiado! Compartilhe com a família 🎉"));
+                }}
+                className="shrink-0 flex items-center gap-1 rounded-lg bg-amber-100 px-2 py-1 text-xs font-bold text-amber-700 hover:bg-amber-200 transition-colors"
+                id="ranking-copy-url-btn"
+              >
+                <Copy className="h-3 w-3" /> Copiar
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={loadRanking}
+                disabled={loading}
+                id="ranking-refresh-btn"
+                className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white hover:bg-amber-600 disabled:opacity-60 transition-colors"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                Atualizar
+              </button>
+              {lastUpdated && (
+                <span className="text-xs text-gray-400">
+                  Atualizado: {lastUpdated.toLocaleTimeString("pt-BR")}
+                </span>
+              )}
+            </div>
           </div>
         </section>
 
