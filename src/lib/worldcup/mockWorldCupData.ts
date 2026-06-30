@@ -1,10 +1,8 @@
 import type { Team, Match, WorldCupData, GroupStanding, Stage } from "./types";
 
-// ─── Copa do Mundo 2026 — Dados Reais ────────────────────────────────────────
-// Sede: EUA, Canadá, México | 48 seleções | 12 grupos (A–L)
-// Fase de grupos: 11–27 jun 2026 (encerrada)
-// Fase de 32: 28 jun – 4 jul 2026
-// Oitavas: 4–7 jul 2026
+// ─── Copa do Mundo 2026 — Dados Reais com bracket correto ─────────────────
+// Fonte: Google/FIFA — Bracket oficial verificado em 30/06/2026
+// Estrutura: 16 jogos Fase de 32 → 8 Oitavas → 4 Quartas → 2 Semis → Final
 // ─────────────────────────────────────────────────────────────────────────────
 
 const flag = (cc: string) => `https://flagcdn.com/w160/${cc.toLowerCase()}.png`;
@@ -47,7 +45,7 @@ function buildTeams(): Team[] {
   for (const g of Object.keys(groupsRaw)) {
     for (const t of groupsRaw[g]) {
       const s = standings[g].find((x) => x.id === t.id)!;
-      out.push({ ...t, played: s.w+s.d+s.l, won: s.w, drawn: s.d, lost: s.l, points: s.p, goalsFor: s.gf, goalsAgainst: s.ga, goalDifference: s.gf-s.ga });
+      out.push({ ...t, played:s.w+s.d+s.l, won:s.w, drawn:s.d, lost:s.l, points:s.p, goalsFor:s.gf, goalsAgainst:s.ga, goalDifference:s.gf-s.ga });
     }
   }
   return out;
@@ -56,116 +54,122 @@ function buildTeams(): Team[] {
 function buildGroups(teams: Team[]): GroupStanding[] {
   return Object.keys(groupsRaw).map((g) => ({
     group: g,
-    teams: teams.filter((t) => t.group === g).sort((a,b) => (b.points!-a.points!) || (b.goalDifference!-a.goalDifference!) || (b.goalsFor!-a.goalsFor!)),
+    teams: teams.filter((t) => t.group === g).sort((a,b)=>(b.points!-a.points!)||(b.goalDifference!-a.goalDifference!)||(b.goalsFor!-a.goalsFor!)),
   }));
 }
 
-// ── Fase de 32 — Dados reais (Fonte: FIFA / Wikipedia) ───────────────────────
-// Resultados conhecidos até 30/06/2026
-// Jogos em andamento / agendados a partir de 30/06
+// ═══════════════════════════════════════════════════════════════════════════
+// BRACKET OFICIAL — Conforme Google/FIFA (verificado 30/06/2026)
+//
+// LADO ESQUERDO (jogos 01-08):
+//   r32-01: África do Sul × Canadá  → r32-04 winner → oitava r16-01 (Canadá × Marrocos) 04/07
+//   r32-04: Países Baixos × Marrocos
+//   r32-03: Alemanha × Paraguai     → r32-05 winner → oitava r16-02 (Paraguai × FRA/SWE) 04/07
+//   r32-05: França × Suécia
+//   r32-02: Brasil × Japão          → r32-06 winner → oitava r16-03 (Brasil × Noruega)   05/07 ★
+//   r32-06: Costa do Marfim × Noruega
+//   r32-07: México × Equador        → r32-08 winner → oitava r16-04 (MEX/ECU × ESP/AUT) 05/07
+//   r32-08: Espanha × Áustria
+//
+// LADO DIREITO (jogos 09-16):
+//   r32-09: Inglaterra × DR Congo   → r32-10 winner → oitava r16-05 07/07
+//   r32-10: Bélgica × Senegal
+//   r32-11: EUA × Bósnia            → r32-12 winner → oitava r16-06 07/07
+//   r32-12: Portugal × Croácia
+//   r32-13: Suíça × Argélia         → r32-14 winner → oitava r16-07 08/07
+//   r32-14: Austrália × Egito
+//   r32-15: Argentina × Cabo Verde  → r32-16 winner → oitava r16-08 08/07
+//   r32-16: Colômbia × Gana
+// ═══════════════════════════════════════════════════════════════════════════
 
-type R32Entry = {
-  id: string; home: string; away: string;
-  homeScore: number|null; awayScore: number|null;
-  penH?: number|null; penA?: number|null;
-  date: string; finished: boolean;
-  // qual jogo da próxima fase este alimenta
-  nextMatchId?: string; nextSlot?: "home"|"away";
-};
+interface R {
+  id:string; home:string; away:string;
+  hs:number|null; as_:number|null;
+  ph?:number|null; pa?:number|null;
+  date:string; done:boolean;
+  next?:string; slot?:"home"|"away";
+}
 
-// CHAVEAMENTO REAL: baseado no bracket oficial da FIFA Copa 2026
-// Lado Esquerdo (jogos 1-8) e Lado Direito (jogos 9-16)
-const r32Data: R32Entry[] = [
-  // ── LADO ESQUERDO ──
-  { id:"r32-01", home:"zaf", away:"can",  homeScore:0,    awayScore:1,    date:"2026-06-28T21:00:00Z", finished:true,  nextMatchId:"r16-L1", nextSlot:"home" },
-  { id:"r32-02", home:"bra", away:"jpn",  homeScore:2,    awayScore:1,    date:"2026-06-29T21:00:00Z", finished:true,  nextMatchId:"r16-L1", nextSlot:"away" },
-  { id:"r32-03", home:"ger", away:"par",  homeScore:1,    awayScore:1, penH:3, penA:4, date:"2026-06-29T21:00:00Z", finished:true,  nextMatchId:"r16-L2", nextSlot:"home" },
-  { id:"r32-04", home:"ned", away:"mar",  homeScore:1,    awayScore:1, penH:2, penA:3, date:"2026-06-29T21:00:00Z", finished:true,  nextMatchId:"r16-L2", nextSlot:"away" },
-  { id:"r32-05", home:"fra", away:"swe",  homeScore:null, awayScore:null, date:"2026-06-30T21:00:00Z", finished:false, nextMatchId:"r16-L3", nextSlot:"home" },
-  { id:"r32-06", home:"civ", away:"nor",  homeScore:null, awayScore:null, date:"2026-07-01T21:00:00Z", finished:false, nextMatchId:"r16-L3", nextSlot:"away" },
-  { id:"r32-07", home:"mex", away:"ecu",  homeScore:null, awayScore:null, date:"2026-07-01T21:00:00Z", finished:false, nextMatchId:"r16-L4", nextSlot:"home" },
-  { id:"r32-08", home:"esp", away:"aut",  homeScore:null, awayScore:null, date:"2026-07-02T21:00:00Z", finished:false, nextMatchId:"r16-L4", nextSlot:"away" },
-
-  // ── LADO DIREITO ──
-  { id:"r32-09", home:"eng", away:"cod",  homeScore:null, awayScore:null, date:"2026-07-02T21:00:00Z", finished:false, nextMatchId:"r16-R1", nextSlot:"home" },
-  { id:"r32-10", home:"bel", away:"sen",  homeScore:null, awayScore:null, date:"2026-07-02T21:00:00Z", finished:false, nextMatchId:"r16-R1", nextSlot:"away" },
-  { id:"r32-11", home:"usa", away:"bih",  homeScore:null, awayScore:null, date:"2026-07-02T21:00:00Z", finished:false, nextMatchId:"r16-R2", nextSlot:"home" },
-  { id:"r32-12", home:"por", away:"cro",  homeScore:null, awayScore:null, date:"2026-07-03T21:00:00Z", finished:false, nextMatchId:"r16-R2", nextSlot:"away" },
-  { id:"r32-13", home:"sui", away:"alg",  homeScore:null, awayScore:null, date:"2026-07-03T21:00:00Z", finished:false, nextMatchId:"r16-R3", nextSlot:"home" },
-  { id:"r32-14", home:"aus", away:"egy",  homeScore:null, awayScore:null, date:"2026-07-04T21:00:00Z", finished:false, nextMatchId:"r16-R3", nextSlot:"away" },
-  { id:"r32-15", home:"arg", away:"cpv",  homeScore:null, awayScore:null, date:"2026-07-04T21:00:00Z", finished:false, nextMatchId:"r16-R4", nextSlot:"home" },
-  { id:"r32-16", home:"col", away:"gha",  homeScore:null, awayScore:null, date:"2026-07-04T21:00:00Z", finished:false, nextMatchId:"r16-R4", nextSlot:"away" },
-];
-
-// Placeholders para as fases seguintes (preenchidos progressivamente no simulador)
-const r16Data: R32Entry[] = [
+const r32: R[] = [
   // LADO ESQUERDO
-  { id:"r16-L1", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-05T21:00:00Z", finished:false, nextMatchId:"qf-L1", nextSlot:"home" },
-  { id:"r16-L2", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-05T21:00:00Z", finished:false, nextMatchId:"qf-L1", nextSlot:"away" },
-  { id:"r16-L3", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-06T21:00:00Z", finished:false, nextMatchId:"qf-L2", nextSlot:"home" },
-  { id:"r16-L4", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-06T21:00:00Z", finished:false, nextMatchId:"qf-L2", nextSlot:"away" },
+  {id:"r32-01",home:"zaf",away:"can",hs:0,as_:1,          date:"2026-06-28T21:00:00Z",done:true, next:"r16-01",slot:"home"},
+  {id:"r32-04",home:"ned",away:"mar",hs:1,as_:1,ph:2,pa:3,date:"2026-06-29T21:00:00Z",done:true, next:"r16-01",slot:"away"},
+  {id:"r32-03",home:"ger",away:"par",hs:1,as_:1,ph:3,pa:4,date:"2026-06-29T21:00:00Z",done:true, next:"r16-02",slot:"home"},
+  {id:"r32-05",home:"fra",away:"swe",hs:null,as_:null,     date:"2026-06-30T21:00:00Z",done:false,next:"r16-02",slot:"away"},
+  {id:"r32-02",home:"bra",away:"jpn",hs:2,as_:1,          date:"2026-06-29T21:00:00Z",done:true, next:"r16-03",slot:"home"},
+  {id:"r32-06",home:"civ",away:"nor",hs:null,as_:null,     date:"2026-07-01T00:00:00Z",done:false,next:"r16-03",slot:"away"},
+  {id:"r32-07",home:"mex",away:"ecu",hs:null,as_:null,     date:"2026-07-01T00:00:00Z",done:false,next:"r16-04",slot:"home"},
+  {id:"r32-08",home:"esp",away:"aut",hs:null,as_:null,     date:"2026-07-02T00:00:00Z",done:false,next:"r16-04",slot:"away"},
   // LADO DIREITO
-  { id:"r16-R1", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-07T21:00:00Z", finished:false, nextMatchId:"qf-R1", nextSlot:"home" },
-  { id:"r16-R2", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-07T21:00:00Z", finished:false, nextMatchId:"qf-R1", nextSlot:"away" },
-  { id:"r16-R3", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-08T21:00:00Z", finished:false, nextMatchId:"qf-R2", nextSlot:"home" },
-  { id:"r16-R4", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-08T21:00:00Z", finished:false, nextMatchId:"qf-R2", nextSlot:"away" },
+  {id:"r32-09",home:"eng",away:"cod",hs:null,as_:null,     date:"2026-07-02T00:00:00Z",done:false,next:"r16-05",slot:"home"},
+  {id:"r32-10",home:"bel",away:"sen",hs:null,as_:null,     date:"2026-07-02T00:00:00Z",done:false,next:"r16-05",slot:"away"},
+  {id:"r32-11",home:"usa",away:"bih",hs:null,as_:null,     date:"2026-07-02T00:00:00Z",done:false,next:"r16-06",slot:"home"},
+  {id:"r32-12",home:"por",away:"cro",hs:null,as_:null,     date:"2026-07-03T00:00:00Z",done:false,next:"r16-06",slot:"away"},
+  {id:"r32-13",home:"sui",away:"alg",hs:null,as_:null,     date:"2026-07-03T00:00:00Z",done:false,next:"r16-07",slot:"home"},
+  {id:"r32-14",home:"aus",away:"egy",hs:null,as_:null,     date:"2026-07-04T00:00:00Z",done:false,next:"r16-07",slot:"away"},
+  {id:"r32-15",home:"arg",away:"cpv",hs:null,as_:null,     date:"2026-07-04T00:00:00Z",done:false,next:"r16-08",slot:"home"},
+  {id:"r32-16",home:"col",away:"gha",hs:null,as_:null,     date:"2026-07-04T00:00:00Z",done:false,next:"r16-08",slot:"away"},
 ];
 
-const qfData: R32Entry[] = [
-  { id:"qf-L1", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-10T21:00:00Z", finished:false, nextMatchId:"sf-1", nextSlot:"home" },
-  { id:"qf-L2", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-11T21:00:00Z", finished:false, nextMatchId:"sf-1", nextSlot:"away" },
-  { id:"qf-R1", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-12T21:00:00Z", finished:false, nextMatchId:"sf-2", nextSlot:"home" },
-  { id:"qf-R2", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-13T21:00:00Z", finished:false, nextMatchId:"sf-2", nextSlot:"away" },
+// Oitavas
+const r16: R[] = [
+  {id:"r16-01",home:"???",away:"???",hs:null,as_:null,date:"2026-07-04T17:00:00Z",done:false,next:"qf-01",slot:"home"}, // Canadá × Marrocos
+  {id:"r16-02",home:"???",away:"???",hs:null,as_:null,date:"2026-07-04T21:00:00Z",done:false,next:"qf-01",slot:"away"}, // Paraguai × FRA/SWE
+  {id:"r16-03",home:"???",away:"???",hs:null,as_:null,date:"2026-07-05T17:00:00Z",done:false,next:"qf-02",slot:"home"}, // Brasil × Noruega ★
+  {id:"r16-04",home:"???",away:"???",hs:null,as_:null,date:"2026-07-05T21:00:00Z",done:false,next:"qf-02",slot:"away"},
+  {id:"r16-05",home:"???",away:"???",hs:null,as_:null,date:"2026-07-07T17:00:00Z",done:false,next:"qf-03",slot:"home"},
+  {id:"r16-06",home:"???",away:"???",hs:null,as_:null,date:"2026-07-07T21:00:00Z",done:false,next:"qf-03",slot:"away"},
+  {id:"r16-07",home:"???",away:"???",hs:null,as_:null,date:"2026-07-08T17:00:00Z",done:false,next:"qf-04",slot:"home"},
+  {id:"r16-08",home:"???",away:"???",hs:null,as_:null,date:"2026-07-08T21:00:00Z",done:false,next:"qf-04",slot:"away"},
 ];
 
-const sfData: R32Entry[] = [
-  { id:"sf-1", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-15T21:00:00Z", finished:false, nextMatchId:"final", nextSlot:"home" },
-  { id:"sf-2", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-16T21:00:00Z", finished:false, nextMatchId:"final", nextSlot:"away" },
+// Quartas
+const qf: R[] = [
+  {id:"qf-01",home:"???",away:"???",hs:null,as_:null,date:"2026-07-09T21:00:00Z",done:false,next:"sf-01",slot:"home"},
+  {id:"qf-02",home:"???",away:"???",hs:null,as_:null,date:"2026-07-10T21:00:00Z",done:false,next:"sf-01",slot:"away"},
+  {id:"qf-03",home:"???",away:"???",hs:null,as_:null,date:"2026-07-11T21:00:00Z",done:false,next:"sf-02",slot:"home"},
+  {id:"qf-04",home:"???",away:"???",hs:null,as_:null,date:"2026-07-12T21:00:00Z",done:false,next:"sf-02",slot:"away"},
 ];
 
-export function buildMockData(): Omit<WorldCupData, "bracket"|"source"|"lastUpdated"> & { rawMatches: Match[]; rawGroups: GroupStanding[] } {
+// Semifinais
+const sf: R[] = [
+  {id:"sf-01",home:"???",away:"???",hs:null,as_:null,date:"2026-07-15T21:00:00Z",done:false,next:"final",slot:"home"},
+  {id:"sf-02",home:"???",away:"???",hs:null,as_:null,date:"2026-07-16T21:00:00Z",done:false,next:"final",slot:"away"},
+];
+
+function toMatch(e: R, stage: Stage, round: string, teams: Team[]): Match {
+  const t = (id: string) => id === "???" ? null : teams.find((x) => x.id === id) || null;
+  const home = t(e.home);
+  const away = t(e.away);
+  const hasPens = e.ph != null && e.pa != null;
+  let winner: string | null = null;
+  if (e.done && home && away) {
+    if (hasPens) winner = e.ph! > e.pa! ? home.id : away.id;
+    else if (e.hs != null && e.as_ != null) winner = e.hs > e.as_ ? home.id : e.as_ > e.hs ? away.id : null;
+  }
+  return {
+    id: e.id, stage, round, homeTeam: home, awayTeam: away,
+    homeScore: e.hs, awayScore: e.as_,
+    penaltiesHome: e.ph ?? null, penaltiesAway: e.pa ?? null,
+    status: e.done ? "finished" : "scheduled",
+    date: e.date, winner,
+    nextMatchId: e.next ?? null,
+    nextMatchSlot: e.slot ?? null,
+  } as Match;
+}
+
+export function buildMockData(): Omit<WorldCupData,"bracket"|"source"|"lastUpdated"> & {rawMatches:Match[];rawGroups:GroupStanding[]} {
   const allTeams = buildTeams();
   const allGroups = buildGroups(allTeams);
-  const t = (id: string) => allTeams.find((x) => x.id === id) || null;
-
-  const toMatch = (entry: R32Entry, stage: Stage, round: string): Match => {
-    const home = entry.home === "???" ? null : t(entry.home);
-    const away = entry.away === "???" ? null : t(entry.away);
-    const hasPens = entry.penH != null && entry.penA != null;
-    let winner: string | null = null;
-    if (entry.finished && home && away) {
-      if (hasPens) {
-        winner = entry.penH! > entry.penA! ? home.id : away.id;
-      } else if (entry.homeScore != null && entry.awayScore != null) {
-        winner = entry.homeScore > entry.awayScore ? home.id : entry.awayScore > entry.homeScore ? away.id : null;
-      }
-    }
-    return {
-      id: entry.id,
-      stage,
-      round,
-      homeTeam: home,
-      awayTeam: away,
-      homeScore: entry.homeScore,
-      awayScore: entry.awayScore,
-      penaltiesHome: entry.penH ?? null,
-      penaltiesAway: entry.penA ?? null,
-      status: entry.finished ? "finished" : "scheduled",
-      date: entry.date,
-      winner,
-      nextMatchId: entry.nextMatchId,
-      nextMatchSlot: entry.nextSlot,
-    } as Match;
-  };
 
   const matches: Match[] = [
-    ...r32Data.map((e) => toMatch(e, "LAST_32", "Fase de 32")),
-    ...r16Data.map((e) => toMatch(e, "LAST_16", "Oitavas de Final")),
-    ...qfData.map((e) => toMatch(e, "QUARTER_FINALS", "Quartas de Final")),
-    ...sfData.map((e) => toMatch(e, "SEMI_FINALS", "Semifinais")),
-    toMatch({ id:"3rd", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-18T21:00:00Z", finished:false }, "THIRD_PLACE", "Disputa 3º Lugar"),
-    toMatch({ id:"final", home:"???", away:"???", homeScore:null, awayScore:null, date:"2026-07-19T21:00:00Z", finished:false }, "FINAL", "Final"),
+    ...r32.map((e) => toMatch(e, "LAST_32", "Fase de 32", allTeams)),
+    ...r16.map((e) => toMatch(e, "LAST_16", "Oitavas de Final", allTeams)),
+    ...qf.map((e) => toMatch(e, "QUARTER_FINALS", "Quartas de Final", allTeams)),
+    ...sf.map((e) => toMatch(e, "SEMI_FINALS", "Semifinais", allTeams)),
+    toMatch({id:"3rd",home:"???",away:"???",hs:null,as_:null,date:"2026-07-18T21:00:00Z",done:false}, "THIRD_PLACE", "3º Lugar", allTeams),
+    toMatch({id:"final",home:"???",away:"???",hs:null,as_:null,date:"2026-07-19T21:00:00Z",done:false}, "FINAL", "Final", allTeams),
   ];
 
-  return { teams: allTeams, groups: allGroups, matches, rawMatches: matches, rawGroups: allGroups, champion: null } as any;
+  return { teams:allTeams, groups:allGroups, matches, rawMatches:matches, rawGroups:allGroups, champion:null } as any;
 }

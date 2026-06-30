@@ -1,14 +1,22 @@
-feat: chaveamento duplo, dados reais Copa 2026, ranking publico, botao palpitar
+fix: bracket correto + simulador responsivo + CTA palpite
 
-- Dados reais: 16 jogos da Fase de 32 com bracket FIFA correto
-  (Africa do Sul x Canada, Brasil x Japao, Alemanha x Paraguai, etc.)
-- Removido match incorreto Franca x Egito (agora Franca x Suecia)
-- Australia x Egito no lado direito do chaveamento (04/07)
-- Componente DoubleSidedBracket: chaveamento de dois lados com
-  16avos -> Oitavas -> Quartas -> Semis -> Final no centro
-- Simulador: chaveamento avanca automaticamente conforme escolhas
-- Jogos ja finalizados bloqueados (nao pode mudar resultado real)
+Bracket Copa 2026 corrigido:
+- Brasil x Japao (29/06, FIM 2x1) → oitava r16-03 = Brasil x Noruega (05/07)
+- Canada x Africa do Sul (28/06, FIM 1x0) → oitava r16-01 = Canada x Marrocos
+- Paraguai eliminou Alemanha nos penaltis → oitava r16-02 = Paraguai x Fra/Swe
+- Todos os 16 jogos da Fase de 32 com links corretos para oitavas/quartas/semis/final
+- Lado esquerdo: jogos 01-08 | Lado direito: jogos 09-16
+
+Simulador reformulado:
+- Componente BracketSimulator: layout responsivo com scroll horizontal
+- Dois lados (esquerdo + direito) convergindo para a Final no centro
+- Cartoes de jogo clicaveis com bandeiras e placar
+- Jogos finalizados bloqueados (nao editaveis)
+- Vencedores avancam automaticamente para proxima fase
+
+UX melhorada:
+- Hero CTA grande e verde incentivando participacao
+- Formulario nome/cidade sempre visivel
 - Barra de progresso dos palpites
 - Botao "Enviar Palpite e Gerar PDF" proeminente
-- Salva automaticamente no banco (Supabase ou LocalStorage)
-- Ranking publico com link de compartilhamento e botao copiar URL
+- Salva no banco (Supabase ou LocalStorage) automaticamente
