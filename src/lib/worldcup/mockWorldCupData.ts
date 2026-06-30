@@ -91,50 +91,50 @@ interface R {
 }
 
 const r32: R[] = [
-  // LADO ESQUERDO
-  {id:"r32-01",home:"zaf",away:"can",hs:0,as_:1,          date:"2026-06-28T21:00:00Z",done:true, next:"r16-01",slot:"home"},
-  {id:"r32-04",home:"ned",away:"mar",hs:1,as_:1,ph:2,pa:3,date:"2026-06-29T21:00:00Z",done:true, next:"r16-01",slot:"away"},
-  {id:"r32-03",home:"ger",away:"par",hs:1,as_:1,ph:3,pa:4,date:"2026-06-29T21:00:00Z",done:true, next:"r16-02",slot:"home"},
-  {id:"r32-05",home:"fra",away:"swe",hs:0,as_:0,ph:5,pa:4,date:"2026-06-30T21:00:00Z",done:true, next:"r16-02",slot:"away"},
-  {id:"r32-02",home:"bra",away:"jpn",hs:2,as_:1,          date:"2026-06-29T21:00:00Z",done:true, next:"r16-03",slot:"home"},
-  {id:"r32-06",home:"civ",away:"nor",hs:1,as_:2,          date:"2026-06-30T21:00:00Z",done:true, next:"r16-03",slot:"away"},
-  {id:"r32-07",home:"mex",away:"ecu",hs:null,as_:null,     date:"2026-07-01T00:00:00Z",done:false,next:"r16-04",slot:"home"},
-  {id:"r32-08",home:"esp",away:"aut",hs:null,as_:null,     date:"2026-07-02T00:00:00Z",done:false,next:"r16-04",slot:"away"},
+  // LADO ESQUERDO — horários verificados no Google/FIFA (BRT → UTC)
+  {id:"r32-01",home:"zaf",away:"can",hs:0,as_:1,          date:"2026-06-28T22:00:00Z",done:true, next:"r16-01",slot:"home"}, // 28/06 19h BRT
+  {id:"r32-04",home:"ned",away:"mar",hs:1,as_:1,ph:2,pa:3,date:"2026-06-29T22:00:00Z",done:true, next:"r16-01",slot:"away"}, // 29/06 19h BRT
+  {id:"r32-03",home:"ger",away:"par",hs:1,as_:1,ph:3,pa:4,date:"2026-06-29T22:00:00Z",done:true, next:"r16-02",slot:"home"}, // 29/06 19h BRT
+  {id:"r32-05",home:"fra",away:"swe",hs:0,as_:0,ph:5,pa:4,date:"2026-06-30T21:00:00Z",done:true, next:"r16-02",slot:"away"}, // 30/06 18h BRT
+  {id:"r32-02",home:"bra",away:"jpn",hs:2,as_:1,          date:"2026-06-29T22:00:00Z",done:true, next:"r16-03",slot:"home"}, // 29/06 19h BRT
+  {id:"r32-06",home:"civ",away:"nor",hs:1,as_:2,          date:"2026-06-30T17:00:00Z",done:true, next:"r16-03",slot:"away"}, // 30/06 14h BRT
+  {id:"r32-07",home:"mex",away:"ecu",hs:null,as_:null,     date:"2026-07-01T01:00:00Z",done:false,next:"r16-04",slot:"home"}, // 30/06 22h BRT
+  {id:"r32-08",home:"esp",away:"aut",hs:null,as_:null,     date:"2026-07-02T19:00:00Z",done:false,next:"r16-04",slot:"away"}, // 02/07 16h BRT
   // LADO DIREITO
-  {id:"r32-09",home:"eng",away:"cod",hs:null,as_:null,     date:"2026-07-02T00:00:00Z",done:false,next:"r16-05",slot:"home"},
-  {id:"r32-10",home:"bel",away:"sen",hs:null,as_:null,     date:"2026-07-02T00:00:00Z",done:false,next:"r16-05",slot:"away"},
-  {id:"r32-11",home:"usa",away:"bih",hs:null,as_:null,     date:"2026-07-02T00:00:00Z",done:false,next:"r16-06",slot:"home"},
-  {id:"r32-12",home:"por",away:"cro",hs:null,as_:null,     date:"2026-07-03T00:00:00Z",done:false,next:"r16-06",slot:"away"},
-  {id:"r32-13",home:"sui",away:"alg",hs:null,as_:null,     date:"2026-07-03T00:00:00Z",done:false,next:"r16-07",slot:"home"},
-  {id:"r32-14",home:"aus",away:"egy",hs:null,as_:null,     date:"2026-07-04T00:00:00Z",done:false,next:"r16-07",slot:"away"},
-  {id:"r32-15",home:"arg",away:"cpv",hs:null,as_:null,     date:"2026-07-04T00:00:00Z",done:false,next:"r16-08",slot:"home"},
-  {id:"r32-16",home:"col",away:"gha",hs:null,as_:null,     date:"2026-07-04T00:00:00Z",done:false,next:"r16-08",slot:"away"},
+  {id:"r32-09",home:"eng",away:"cod",hs:null,as_:null,     date:"2026-07-01T16:00:00Z",done:false,next:"r16-05",slot:"home"}, // 01/07 13h BRT
+  {id:"r32-10",home:"bel",away:"sen",hs:null,as_:null,     date:"2026-07-01T20:00:00Z",done:false,next:"r16-05",slot:"away"}, // 01/07 17h BRT
+  {id:"r32-11",home:"usa",away:"bih",hs:null,as_:null,     date:"2026-07-02T00:00:00Z",done:false,next:"r16-06",slot:"home"}, // 01/07 21h BRT
+  {id:"r32-12",home:"por",away:"cro",hs:null,as_:null,     date:"2026-07-02T23:00:00Z",done:false,next:"r16-06",slot:"away"}, // 02/07 20h BRT
+  {id:"r32-13",home:"sui",away:"alg",hs:null,as_:null,     date:"2026-07-03T03:00:00Z",done:false,next:"r16-07",slot:"home"}, // 03/07 00h BRT
+  {id:"r32-14",home:"aus",away:"egy",hs:null,as_:null,     date:"2026-07-03T18:00:00Z",done:false,next:"r16-07",slot:"away"}, // 03/07 15h BRT
+  {id:"r32-15",home:"arg",away:"cpv",hs:null,as_:null,     date:"2026-07-03T22:00:00Z",done:false,next:"r16-08",slot:"home"}, // 03/07 19h BRT
+  {id:"r32-16",home:"col",away:"gha",hs:null,as_:null,     date:"2026-07-04T01:30:00Z",done:false,next:"r16-08",slot:"away"}, // 03/07 22h30 BRT
 ];
 
-// Oitavas
+// Oitavas — horários oficiais BRT → UTC
 const r16: R[] = [
-  {id:"r16-01",home:"???",away:"???",hs:null,as_:null,date:"2026-07-04T17:00:00Z",done:false,next:"qf-01",slot:"home"}, // Canadá × Marrocos
-  {id:"r16-02",home:"???",away:"???",hs:null,as_:null,date:"2026-07-04T21:00:00Z",done:false,next:"qf-01",slot:"away"}, // Paraguai × FRA/SWE
-  {id:"r16-03",home:"???",away:"???",hs:null,as_:null,date:"2026-07-05T17:00:00Z",done:false,next:"qf-02",slot:"home"}, // Brasil × Noruega ★
-  {id:"r16-04",home:"???",away:"???",hs:null,as_:null,date:"2026-07-05T21:00:00Z",done:false,next:"qf-02",slot:"away"},
-  {id:"r16-05",home:"???",away:"???",hs:null,as_:null,date:"2026-07-07T17:00:00Z",done:false,next:"qf-03",slot:"home"},
-  {id:"r16-06",home:"???",away:"???",hs:null,as_:null,date:"2026-07-07T21:00:00Z",done:false,next:"qf-03",slot:"away"},
-  {id:"r16-07",home:"???",away:"???",hs:null,as_:null,date:"2026-07-08T17:00:00Z",done:false,next:"qf-04",slot:"home"},
-  {id:"r16-08",home:"???",away:"???",hs:null,as_:null,date:"2026-07-08T21:00:00Z",done:false,next:"qf-04",slot:"away"},
+  {id:"r16-01",home:"???",away:"???",hs:null,as_:null,date:"2026-07-04T17:00:00Z",done:false,next:"qf-01",slot:"home"}, // 04/07 14h BRT: Canadá × Marrocos
+  {id:"r16-02",home:"???",away:"???",hs:null,as_:null,date:"2026-07-04T21:00:00Z",done:false,next:"qf-01",slot:"away"}, // 04/07 18h BRT: Paraguai × FRA/SWE
+  {id:"r16-03",home:"???",away:"???",hs:null,as_:null,date:"2026-07-05T20:00:00Z",done:false,next:"qf-02",slot:"home"}, // 05/07 17h BRT: Brasil × Noruega ★
+  {id:"r16-04",home:"???",away:"???",hs:null,as_:null,date:"2026-07-06T00:00:00Z",done:false,next:"qf-02",slot:"away"}, // 05/07 21h BRT
+  {id:"r16-05",home:"???",away:"???",hs:null,as_:null,date:"2026-07-07T17:00:00Z",done:false,next:"qf-03",slot:"home"}, // 07/07 14h BRT
+  {id:"r16-06",home:"???",away:"???",hs:null,as_:null,date:"2026-07-07T21:00:00Z",done:false,next:"qf-03",slot:"away"}, // 07/07 18h BRT
+  {id:"r16-07",home:"???",away:"???",hs:null,as_:null,date:"2026-07-08T18:00:00Z",done:false,next:"qf-04",slot:"home"}, // 08/07 15h BRT
+  {id:"r16-08",home:"???",away:"???",hs:null,as_:null,date:"2026-07-08T22:00:00Z",done:false,next:"qf-04",slot:"away"}, // 08/07 19h BRT
 ];
 
-// Quartas
+// Quartas — 9 a 12 de julho
 const qf: R[] = [
-  {id:"qf-01",home:"???",away:"???",hs:null,as_:null,date:"2026-07-09T21:00:00Z",done:false,next:"sf-01",slot:"home"},
-  {id:"qf-02",home:"???",away:"???",hs:null,as_:null,date:"2026-07-10T21:00:00Z",done:false,next:"sf-01",slot:"away"},
-  {id:"qf-03",home:"???",away:"???",hs:null,as_:null,date:"2026-07-11T21:00:00Z",done:false,next:"sf-02",slot:"home"},
-  {id:"qf-04",home:"???",away:"???",hs:null,as_:null,date:"2026-07-12T21:00:00Z",done:false,next:"sf-02",slot:"away"},
+  {id:"qf-01",home:"???",away:"???",hs:null,as_:null,date:"2026-07-09T21:00:00Z",done:false,next:"sf-01",slot:"home"}, // 09/07 18h BRT
+  {id:"qf-02",home:"???",away:"???",hs:null,as_:null,date:"2026-07-10T21:00:00Z",done:false,next:"sf-01",slot:"away"}, // 10/07 18h BRT
+  {id:"qf-03",home:"???",away:"???",hs:null,as_:null,date:"2026-07-11T21:00:00Z",done:false,next:"sf-02",slot:"home"}, // 11/07 18h BRT
+  {id:"qf-04",home:"???",away:"???",hs:null,as_:null,date:"2026-07-12T21:00:00Z",done:false,next:"sf-02",slot:"away"}, // 12/07 18h BRT
 ];
 
-// Semifinais
+// Semifinais — 14 e 15 de julho
 const sf: R[] = [
-  {id:"sf-01",home:"???",away:"???",hs:null,as_:null,date:"2026-07-15T21:00:00Z",done:false,next:"final",slot:"home"},
-  {id:"sf-02",home:"???",away:"???",hs:null,as_:null,date:"2026-07-16T21:00:00Z",done:false,next:"final",slot:"away"},
+  {id:"sf-01",home:"???",away:"???",hs:null,as_:null,date:"2026-07-14T19:00:00Z",done:false,next:"final",slot:"home"}, // 14/07 16h BRT
+  {id:"sf-02",home:"???",away:"???",hs:null,as_:null,date:"2026-07-15T19:00:00Z",done:false,next:"final",slot:"away"}, // 15/07 16h BRT
 ];
 
 function toMatch(e: R, stage: Stage, round: string, teams: Team[]): Match {
@@ -167,8 +167,8 @@ export function buildMockData(): Omit<WorldCupData,"bracket"|"source"|"lastUpdat
     ...r16.map((e) => toMatch(e, "LAST_16", "Oitavas de Final", allTeams)),
     ...qf.map((e) => toMatch(e, "QUARTER_FINALS", "Quartas de Final", allTeams)),
     ...sf.map((e) => toMatch(e, "SEMI_FINALS", "Semifinais", allTeams)),
-    toMatch({id:"3rd",home:"???",away:"???",hs:null,as_:null,date:"2026-07-18T21:00:00Z",done:false}, "THIRD_PLACE", "3º Lugar", allTeams),
-    toMatch({id:"final",home:"???",away:"???",hs:null,as_:null,date:"2026-07-19T21:00:00Z",done:false}, "FINAL", "Final", allTeams),
+    toMatch({id:"3rd",home:"???",away:"???",hs:null,as_:null,date:"2026-07-18T19:00:00Z",done:false}, "THIRD_PLACE", "3º Lugar", allTeams), // 18/07 16h BRT
+    toMatch({id:"final",home:"???",away:"???",hs:null,as_:null,date:"2026-07-19T19:00:00Z",done:false}, "FINAL", "Final", allTeams), // 19/07 16h BRT
   ];
 
   return { teams:allTeams, groups:allGroups, matches, rawMatches:matches, rawGroups:allGroups, champion:null } as any;

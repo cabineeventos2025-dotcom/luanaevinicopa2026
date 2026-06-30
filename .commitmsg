@@ -1,15 +1,28 @@
-fix: bracket propaga vencedores + placar visivel + banner CTA + ranking resiliente
+fix: horarios corretos BRT + PDF com YouTube + 3 lugar simulador
 
-- bracketEngine: advanceBracket agora SEMPRE sobrescreve o time no proximo jogo
-  (antes so colocava se o slot era null — isso impedia Noruega de aparecer)
-- bracketEngine: identifyWinner usa campo winner explicito como fallback
-- simulateWinner aceita homeScore/awayScore opcionais
-- BracketSimulator: campos de placar visiveis com fundo amarelo para todos
-  os jogos nao finalizados que tem ambos os times
-- Botoes rapidos de escolha (sem placar) como alternativa
-- SimulatorView: reescrito sem dependencia de SimulatorContext
-  salva localmente E no Supabase, gera PDF com jsPDF puro
-- repositories/index.ts: repositorio resiliente — tenta Supabase, cai para
-  localStorage silenciosamente em qualquer erro (sem mensagem de erro no ranking)
-- routes/index.tsx: banner verde CTA acima das abas (sempre visivel)
-  removido duplicado dentro da aba Overview
+- mockWorldCupData.ts: todos os horarios corrigidos conforme Google/FIFA oficial
+  * CIV x NOR: 30/06 14h BRT (era 18h)
+  * FRA x SWE: 30/06 18h BRT (correta)
+  * MEX x ECU: 30/06 22h BRT = 01/07 01:00 UTC (era 21h)
+  * ENG x COD: 01/07 13h BRT = 01/07 16:00 UTC (era 01/07 21h - ERRADO)
+  * BEL x SEN: 01/07 17h BRT = 01/07 20:00 UTC
+  * USA x BIH: 01/07 21h BRT = 02/07 00:00 UTC (correta)
+  * ESP x AUT: 02/07 16h BRT = 02/07 19:00 UTC (era 02/07 00:00)
+  * POR x CRO: 02/07 20h BRT = 02/07 23:00 UTC
+  * SUI x ALG: 03/07 00h BRT = 03/07 03:00 UTC (era 00:00)
+  * AUS x EGY: 03/07 15h BRT = 03/07 18:00 UTC
+  * ARG x CPV: 03/07 19h BRT = 03/07 22:00 UTC
+  * COL x GHA: 03/07 22h30 BRT = 04/07 01:30 UTC
+  * Oitavas: 04-08 julho com horarios reais
+  * Semifinal: 14 e 15 julho 16h BRT
+  * Final: 19 julho 16h BRT
+
+- pdfExport.ts: header vermelho YouTube com nome do canal
+  * Fundo vermelho com badge YT e nome do canal
+  * Link youtube.com/@Luanaqueirozefamilia
+  * Secao campeao com bandeira (tenta carregar via CORS)
+  * Layout 2 colunas para jogos
+  * Rodape vermelho com YouTube
+
+- bracketEngine.ts (anterior): 3o lugar correto
+  * Perdedores das semifinais vao para 3rd automaticamente
