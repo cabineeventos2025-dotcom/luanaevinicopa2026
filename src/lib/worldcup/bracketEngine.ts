@@ -17,46 +17,56 @@ export function getStageName(s: Stage) {
 }
 
 export function identifyWinner(match: Match): { winner: Team | null; loser: Team | null } {
-  if (match.status !== "finished" || !match.homeTeam || !match.awayTeam) {
-    return { winner: null, loser: null };
-  }
+  if (!match.homeTeam || !match.awayTeam) return { winner: null, loser: null };
   if (match.homeScore == null || match.awayScore == null) return { winner: null, loser: null };
 
   if (match.homeScore > match.awayScore) return { winner: match.homeTeam, loser: match.awayTeam };
   if (match.awayScore > match.homeScore) return { winner: match.awayTeam, loser: match.homeTeam };
 
-  // penalties
+  // Em caso de empate, checar pênaltis
   if (match.penaltiesHome != null && match.penaltiesAway != null) {
     if (match.penaltiesHome > match.penaltiesAway) return { winner: match.homeTeam, loser: match.awayTeam };
     if (match.penaltiesAway > match.penaltiesHome) return { winner: match.awayTeam, loser: match.homeTeam };
   }
+
+  // Usar winner explícito se existir
+  if (match.winner) {
+    const w = match.winner === match.homeTeam.id ? match.homeTeam : match.awayTeam;
+    const l = match.winner === match.homeTeam.id ? match.awayTeam : match.homeTeam;
+    return { winner: w, loser: l };
+  }
+
   return { winner: null, loser: null };
 }
 
-/** Propagates winners forward through bracket. Mutates copies. */
+/** Propaga vencedores para frente no chaveamento. Retorna novo array. */
 export function advanceBracket(matchesIn: Match[]): Match[] {
+  // Deep copy for immutability
   const matches = matchesIn.map((m) => ({ ...m }));
   const byId = new Map(matches.map((m) => [m.id, m]));
 
-  // process knockout in order
   const knockoutOrder: Stage[] = ["LAST_32", "LAST_16", "QUARTER_FINALS", "SEMI_FINALS"];
+
   for (const stage of knockoutOrder) {
     const stageMatches = matches.filter((m) => m.stage === stage);
     for (const m of stageMatches) {
       const { winner, loser } = identifyWinner(m);
       if (!winner) continue;
+
+      // Marcar vencedor neste jogo
       m.winner = winner.id;
       m.loser = loser?.id ?? null;
 
+      // Propagar para próximo jogo — SEMPRE sobrescreve (não só se null)
       if (m.nextMatchId) {
         const next = byId.get(m.nextMatchId);
         if (next) {
-          if (m.nextMatchSlot === "home" && !next.homeTeam) next.homeTeam = winner;
-          else if (m.nextMatchSlot === "away" && !next.awayTeam) next.awayTeam = winner;
+          if (m.nextMatchSlot === "home") next.homeTeam = winner;
+          else if (m.nextMatchSlot === "away") next.awayTeam = winner;
         }
       }
 
-      // Semifinal losers → third place
+      // Perdedores das semifinais → jogo de 3º lugar
       if (stage === "SEMI_FINALS" && loser) {
         const third = matches.find((x) => x.stage === "THIRD_PLACE");
         if (third) {
@@ -95,30 +105,35 @@ export function processWorldCupData(input: Omit<WorldCupData, "bracket" | "champ
   const updatedMatches = advanceBracket(input.matches);
   const bracket = buildBracket(updatedMatches);
   const champion = getChampion(updatedMatches);
-  return {
-    ...input,
-    matches: updatedMatches,
-    bracket,
-    champion,
-  };
+  return { ...input, matches: updatedMatches, bracket, champion };
 }
 
-/** Used by simulator to force a winner for a knockout match. */
-export function simulateWinner(matches: Match[], matchId: string, winnerId: "home" | "away"): Match[] {
-  const copy = matches.map((m) => ({ ...m, homeTeam: m.homeTeam, awayTeam: m.awayTeam }));
+/** Força vencedor de um jogo no simulador e propaga. */
+export function simulateWinner(
+  matches: Match[],
+  matchId: string,
+  slot: "home" | "away",
+  homeScore?: number,
+  awayScore?: number
+): Match[] {
+  const copy = matches.map((m) => ({ ...m }));
   const byId = new Map(copy.map((m) => [m.id, m]));
   const m = byId.get(matchId);
   if (!m || !m.homeTeam || !m.awayTeam) return matches;
 
-  // mark as finished with synthetic score
-  if (m.homeScore == null || m.awayScore == null) {
-    m.homeScore = winnerId === "home" ? 1 : 0;
-    m.awayScore = winnerId === "away" ? 1 : 0;
+  // Definir placar
+  if (homeScore !== undefined && awayScore !== undefined) {
+    m.homeScore = homeScore;
+    m.awayScore = awayScore;
+  } else {
+    // Placar sintético se nenhum foi informado
+    m.homeScore = slot === "home" ? 1 : 0;
+    m.awayScore = slot === "away" ? 1 : 0;
   }
   m.status = "finished";
-  m.winner = winnerId === "home" ? m.homeTeam.id : m.awayTeam.id;
+  m.winner = slot === "home" ? m.homeTeam.id : m.awayTeam.id;
 
-  // wipe forward dependencies first so they recompute
+  // Limpar tudo que depende deste jogo para frente
   const toClear = new Set<string>();
   const collectForward = (mid: string) => {
     const cur = byId.get(mid);
@@ -127,6 +142,7 @@ export function simulateWinner(matches: Match[], matchId: string, winnerId: "hom
     collectForward(cur.nextMatchId);
   };
   collectForward(matchId);
+
   for (const id of toClear) {
     const f = byId.get(id);
     if (!f) continue;
@@ -137,7 +153,8 @@ export function simulateWinner(matches: Match[], matchId: string, winnerId: "hom
     f.status = "scheduled";
     f.winner = null;
   }
-  // also clear third place
+
+  // Limpar 3º lugar
   const third = copy.find((x) => x.stage === "THIRD_PLACE");
   if (third) {
     third.homeTeam = null;
@@ -151,7 +168,6 @@ export function simulateWinner(matches: Match[], matchId: string, winnerId: "hom
   return advanceBracket(copy);
 }
 
-/** Path a team would take to the final, given current bracket. */
 export function getTeamPath(teamId: string, matches: Match[]): Match[] {
   return matches
     .filter((m) => m.homeTeam?.id === teamId || m.awayTeam?.id === teamId)

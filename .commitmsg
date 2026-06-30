@@ -1,1 +1,15 @@
-ci: force redeploy vercel with supabase env vars
+fix: bracket propaga vencedores + placar visivel + banner CTA + ranking resiliente
+
+- bracketEngine: advanceBracket agora SEMPRE sobrescreve o time no proximo jogo
+  (antes so colocava se o slot era null — isso impedia Noruega de aparecer)
+- bracketEngine: identifyWinner usa campo winner explicito como fallback
+- simulateWinner aceita homeScore/awayScore opcionais
+- BracketSimulator: campos de placar visiveis com fundo amarelo para todos
+  os jogos nao finalizados que tem ambos os times
+- Botoes rapidos de escolha (sem placar) como alternativa
+- SimulatorView: reescrito sem dependencia de SimulatorContext
+  salva localmente E no Supabase, gera PDF com jsPDF puro
+- repositories/index.ts: repositorio resiliente — tenta Supabase, cai para
+  localStorage silenciosamente em qualquer erro (sem mensagem de erro no ranking)
+- routes/index.tsx: banner verde CTA acima das abas (sempre visivel)
+  removido duplicado dentro da aba Overview
