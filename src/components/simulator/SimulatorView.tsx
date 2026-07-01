@@ -1,29 +1,150 @@
-import { useEffect, useState, useCallback } from "react";
-import type { WorldCupData } from "@/lib/worldcup/types";
+import { useEffect, useState, useCallback, useRef } from "react";
+import type { Match, WorldCupData } from "@/lib/worldcup/types";
 import { SimulatorList } from "./SimulatorList";
 import { advanceBracket, simulateWinner, resetSimMatch } from "@/lib/worldcup/bracketEngine";
 import { getRankingRepository } from "@/repositories";
 import { generatePredictionPDF } from "@/utils/pdfExport";
 import { generateCode, generateHash } from "@/utils/hashUtils";
 import { nowBrazil, formatBrazil } from "@/utils/dateUtils";
-import { RotateCcw, Send, CheckCircle2, User, MapPin, Trophy } from "lucide-react";
+import { RotateCcw, Send, CheckCircle2, User, MapPin, Trophy, Save } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props { realData: WorldCupData; }
 
+// ─── Rascunho ────────────────────────────────────────────────────────────────
+const DRAFT_KEY = "sim_draft_v2";
+
+interface MatchChoice {
+  winner: string | null;
+  homeScore: number | null;
+  awayScore: number | null;
+  penaltiesHome: number | null;
+  penaltiesAway: number | null;
+}
+
+interface SimDraft {
+  choices: Record<string, MatchChoice>; // matchId → escolha do usuário
+  name: string;
+  city: string;
+  savedAt: string;
+}
+
+function saveDraft(choices: Record<string, MatchChoice>, name: string, city: string) {
+  try {
+    const draft: SimDraft = { choices, name, city, savedAt: new Date().toISOString() };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  } catch { /* quota exceeded or private mode */ }
+}
+
+function loadDraft(): SimDraft | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? (JSON.parse(raw) as SimDraft) : null;
+  } catch { return null; }
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+}
+
+/** Extrai as escolhas simuladas do usuário a partir de simMatches. */
+function extractChoices(matches: Match[]): Record<string, MatchChoice> {
+  const result: Record<string, MatchChoice> = {};
+  for (const m of matches) {
+    if (m.simulated) {
+      result[m.id] = {
+        winner: m.winner ?? null,
+        homeScore: m.homeScore ?? null,
+        awayScore: m.awayScore ?? null,
+        penaltiesHome: m.penaltiesHome ?? null,
+        penaltiesAway: m.penaltiesAway ?? null,
+      };
+    }
+  }
+  return result;
+}
+
+/**
+ * Aplica escolhas do rascunho sobre os dados reais.
+ * Apenas sobrescreve matches não finalizados com escolha real.
+ */
+function applyChoices(
+  baseMatches: Match[],
+  choices: Record<string, MatchChoice>,
+): Match[] {
+  let matches = [...baseMatches];
+  // Aplicar em ordem para que o advanceBracket funcione corretamente
+  for (const [matchId, choice] of Object.entries(choices)) {
+    const idx = matches.findIndex((m) => m.id === matchId);
+    if (idx === -1) continue;
+    const m = matches[idx];
+    // Não sobrescrever resultado real
+    if (m.status === "finished" && !m.simulated) continue;
+    // Descobrir slot (home/away) pelo winner
+    const slot = choice.winner === m.homeTeam?.id ? "home" : "away";
+    if (!choice.winner) continue;
+    matches = simulateWinner(
+      matches,
+      matchId,
+      slot,
+      choice.homeScore ?? undefined,
+      choice.awayScore ?? undefined,
+      choice.penaltiesHome ?? undefined,
+      choice.penaltiesAway ?? undefined,
+    );
+  }
+  return matches;
+}
+
+// ─── Componente ──────────────────────────────────────────────────────────────
 export function SimulatorView({ realData }: Props) {
-  const [simMatches, setSimMatches] = useState(() => advanceBracket(realData.matches));
+  const [name, setName] = useState("");
+  const [city, setCity] = useState("");
+  const [simMatches, setSimMatches] = useState<Match[]>(() => {
+    // Inicializar com rascunho salvo, se existir
+    const base = advanceBracket(realData.matches);
+    const draft = loadDraft();
+    if (draft) {
+      return applyChoices(base, draft.choices);
+    }
+    return base;
+  });
   const [generating, setGenerating] = useState(false);
   const [saved, setSaved] = useState(false);
   const [palpiteCode, setPalpiteCode] = useState("");
-  const [name, setName] = useState("");
-  const [city, setCity] = useState("");
+  const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
 
-  // Re-init when realData changes
+  // Restaurar nome/cidade do rascunho no primeiro render
   useEffect(() => {
-    setSimMatches(advanceBracket(realData.matches));
-    setSaved(false);
+    const draft = loadDraft();
+    if (draft) {
+      if (draft.name) setName(draft.name);
+      if (draft.city) setCity(draft.city);
+      setDraftSavedAt(new Date(draft.savedAt));
+    }
+  }, []);
+
+  // Quando os dados reais mudam (novo resultado de jogo), mesclar com as escolhas do usuário
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    // Preservar escolhas do usuário ao atualizar dados reais
+    setSimMatches((prev) => {
+      const choices = extractChoices(prev);
+      const base = advanceBracket(realData.matches);
+      return applyChoices(base, choices);
+    });
   }, [realData]);
+
+  // Auto-salvar rascunho sempre que simMatches, name ou city mudar
+  useEffect(() => {
+    if (saved) return; // já enviado, não salva rascunho
+    const choices = extractChoices(simMatches);
+    saveDraft(choices, name, city);
+    if (Object.keys(choices).length > 0 || name || city) {
+      setDraftSavedAt(new Date());
+    }
+  }, [simMatches, name, city, saved]);
 
   // Campeão = vencedor da final
   const finalMatch = simMatches.find((m) => m.id === "final");
@@ -31,7 +152,7 @@ export function SimulatorView({ realData }: Props) {
     ? [...simMatches].flatMap((m) => [m.homeTeam, m.awayTeam]).find((t) => t?.id === finalMatch.winner) ?? null
     : null;
 
-  // Progresso (inclui 3º lugar no total)
+  // Progresso
   const knockout = simMatches.filter((m) => m.stage !== "GROUP_STAGE");
   const chosen   = knockout.filter((m) => m.winner).length;
   const total    = knockout.length;
@@ -44,9 +165,13 @@ export function SimulatorView({ realData }: Props) {
   }, [simMatches]);
 
   const handleReset = () => {
+    clearDraft();
     setSimMatches(advanceBracket(realData.matches));
     setSaved(false);
     setPalpiteCode("");
+    setName("");
+    setCity("");
+    setDraftSavedAt(null);
     toast.success("Palpite resetado! ♻️");
   };
 
@@ -57,7 +182,7 @@ export function SimulatorView({ realData }: Props) {
   const handleSubmit = async () => {
     if (!name.trim()) { toast.error("Digite seu nome! 👤"); return; }
     if (!city.trim()) { toast.error("Digite sua cidade! 📍"); return; }
-    if (!champion) { toast.error("Complete o chaveamento até escolher o campeão! 🏆"); return; }
+    if (!champion)    { toast.error("Complete o chaveamento até escolher o campeão! 🏆"); return; }
 
     setGenerating(true);
     try {
@@ -66,7 +191,6 @@ export function SimulatorView({ realData }: Props) {
       const createdAtBrazil = formatBrazil(now);
       const code = generateCode();
 
-      // Monta lista de jogos para o palpite (inclui flagUrls e pênaltis para o PDF)
       const predMatches = simMatches
         .filter((m) => m.stage !== "GROUP_STAGE")
         .map((m) => ({
@@ -125,22 +249,20 @@ export function SimulatorView({ realData }: Props) {
         termsAccepted: true,
       };
 
-      // Salvar no banco
       const repo = getRankingRepository();
       try {
         await repo.savePrediction(prediction as any);
+        clearDraft(); // Limpar rascunho após envio bem-sucedido
         setPalpiteCode(code);
         setSaved(true);
         toast.success(`✅ Palpite salvo no ranking online! Código: ${code}`, { duration: 8000 });
       } catch (saveErr: any) {
-        // Salvar só localmente se Supabase falhar
         console.error("[SimulatorView] Erro ao salvar:", saveErr);
         setPalpiteCode(code);
         setSaved(true);
         toast.warning(`⚠️ Salvo localmente. Erro online: ${saveErr?.message ?? saveErr}`, { duration: 10000 });
       }
 
-      // Gerar PDF independente do save
       try {
         await generatePredictionPDF(prediction as any);
         toast.success("📄 PDF baixado com sucesso!");
@@ -164,7 +286,15 @@ export function SimulatorView({ realData }: Props) {
       <div className="space-y-1.5">
         <div className="flex justify-between text-xs text-gray-500">
           <span>{chosen}/{total} jogos escolhidos</span>
-          <span className="font-black text-amber-600">{pct}%</span>
+          <div className="flex items-center gap-2">
+            {draftSavedAt && !saved && (
+              <span className="flex items-center gap-1 text-green-600 font-semibold">
+                <Save className="h-3 w-3" />
+                Rascunho salvo {draftSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+            <span className="font-black text-amber-600">{pct}%</span>
+          </div>
         </div>
         <div className="h-3 rounded-full bg-gray-100 overflow-hidden">
           <div
@@ -176,6 +306,21 @@ export function SimulatorView({ realData }: Props) {
           👆 Clique nos campos de placar ou nos botões para escolher os vencedores
         </p>
       </div>
+
+      {/* ── Aviso de rascunho restaurado ── */}
+      {draftSavedAt && !saved && chosen > 0 && (
+        <div className="rounded-2xl bg-green-50 border border-green-200 px-4 py-2.5 flex items-center justify-between gap-3">
+          <span className="text-sm text-green-700 font-semibold">
+            💾 Rascunho restaurado — seus palpites estão salvos localmente e não se perdem ao atualizar a página.
+          </span>
+          <button
+            onClick={handleReset}
+            className="shrink-0 text-xs text-red-400 hover:text-red-600 font-bold underline"
+          >
+            Limpar
+          </button>
+        </div>
+      )}
 
       {/* ── Dados do participante ── */}
       <div className="rounded-2xl bg-white border-2 border-amber-200 p-4 shadow-sm">
@@ -208,7 +353,7 @@ export function SimulatorView({ realData }: Props) {
         </div>
       </div>
 
-      {/* ── Lista de palpites (identico à pag. principal) ── */}
+      {/* ── Lista de palpites ── */}
       <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <div className="flex items-center gap-2">
@@ -308,7 +453,7 @@ export function SimulatorView({ realData }: Props) {
   );
 }
 
-// Helper local para não importar cn de fora
+// Helper local
 function cn(...classes: (string | boolean | undefined | null)[]): string {
   return classes.filter(Boolean).join(" ");
 }
