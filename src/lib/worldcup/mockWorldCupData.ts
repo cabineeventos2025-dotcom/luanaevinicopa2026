@@ -59,27 +59,27 @@ function buildGroups(teams: Team[]): GroupStanding[] {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// BRACKET OFICIAL — Conforme Google/FIFA (verificado 30/06/2026)
+// BRACKET OFICIAL — Conforme Google/FIFA (atualizado 01/07/2026)
 //
 // LADO ESQUERDO (jogos 01-08):
-//   r32-01: África do Sul × Canadá  → r32-04 winner → oitava r16-01 (Canadá × Marrocos) 04/07
-//   r32-04: Países Baixos × Marrocos
-//   r32-03: Alemanha × Paraguai     → r32-05 winner → oitava r16-02 (Paraguai × FRA/SWE) 04/07
-//   r32-05: França × Suécia
-//   r32-02: Brasil × Japão          → r32-06 winner → oitava r16-03 (Brasil × Noruega)   05/07 ★
-//   r32-06: Costa do Marfim × Noruega
-//   r32-07: México × Equador        → r32-08 winner → oitava r16-04 (MEX/ECU × ESP/AUT) 05/07
-//   r32-08: Espanha × Áustria
+//   r32-01: África do Sul × Canadá     → r16-01 (04/07) Canadá × Marrocos
+//   r32-04: Países Baixos × Marrocos   → r16-01
+//   r32-03: Alemanha × Paraguai        → r16-02 (04/07)
+//   r32-05: França × Suécia            → r16-02
+//   r32-02: Brasil × Japão             → r16-03 (05/07) Brasil × Noruega ★
+//   r32-06: Costa do Marfim × Noruega  → r16-03
+//   r32-07: México × Equador (FIM 2-0) → r16-04 (05/07 21h) MEX vs ENG ← KEY
+//   r32-09: Inglaterra × DR Congo (FIM 2-1) → r16-04        ← KEY FIX
 //
-// LADO DIREITO (jogos 09-16):
-//   r32-09: Inglaterra × DR Congo   → r32-10 winner → oitava r16-05 07/07
-//   r32-10: Bélgica × Senegal
-//   r32-11: EUA × Bósnia            → r32-12 winner → oitava r16-06 07/07
-//   r32-12: Portugal × Croácia
-//   r32-13: Suíça × Argélia         → r32-14 winner → oitava r16-07 08/07
-//   r32-14: Austrália × Egito
-//   r32-15: Argentina × Cabo Verde  → r32-16 winner → oitava r16-08 08/07
-//   r32-16: Colômbia × Gana
+// LADO DIREITO (jogos 10-16):
+//   r32-08: Espanha × Áustria          → r16-05
+//   r32-10: Bélgica × Senegal          → r16-05
+//   r32-11: EUA × Bósnia               → r16-06
+//   r32-12: Portugal × Croácia         → r16-06
+//   r32-13: Suíça × Argélia (03/07)    → r16-07 (07/07 17h BRT) SUI/ALG × COL/GHA
+//   r32-16: Colômbia × Gana (03/07)    → r16-07               ← KEY FIX
+//   r32-14: Austrália × Egito          → r16-08
+//   r32-15: Argentina × Cabo Verde     → r16-08
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface R {
@@ -91,35 +91,35 @@ interface R {
 }
 
 const r32: R[] = [
-  // LADO ESQUERDO — horários verificados no Google/FIFA (BRT → UTC)
-  {id:"r32-01",home:"zaf",away:"can",hs:0,as_:1,          date:"2026-06-28T22:00:00Z",done:true, next:"r16-01",slot:"home"}, // 28/06 19h BRT
-  {id:"r32-04",home:"ned",away:"mar",hs:1,as_:1,ph:2,pa:3,date:"2026-06-29T22:00:00Z",done:true, next:"r16-01",slot:"away"}, // 29/06 19h BRT
-  {id:"r32-03",home:"ger",away:"par",hs:1,as_:1,ph:3,pa:4,date:"2026-06-29T22:00:00Z",done:true, next:"r16-02",slot:"home"}, // 29/06 19h BRT
-  {id:"r32-05",home:"fra",away:"swe",hs:3,as_:0,          date:"2026-06-30T21:00:00Z",done:true, next:"r16-02",slot:"away"}, // 30/06 18h BRT: França 3×0 Suécia
-  {id:"r32-02",home:"bra",away:"jpn",hs:2,as_:1,          date:"2026-06-29T22:00:00Z",done:true, next:"r16-03",slot:"home"}, // 29/06 19h BRT
-  {id:"r32-06",home:"civ",away:"nor",hs:1,as_:2,          date:"2026-06-30T17:00:00Z",done:true, next:"r16-03",slot:"away"}, // 30/06 14h BRT
-  {id:"r32-07",home:"mex",away:"ecu",hs:2,as_:0,          date:"2026-07-01T01:00:00Z",done:true, next:"r16-04",slot:"home"}, // 30/06 22h BRT: México 2×0 Equador
-  {id:"r32-08",home:"esp",away:"aut",hs:null,as_:null,     date:"2026-07-02T19:00:00Z",done:false,next:"r16-04",slot:"away"}, // 02/07 16h BRT
+  // LADO ESQUERDO
+  {id:"r32-01",home:"zaf",away:"can",hs:0, as_:1,          date:"2026-06-28T22:00:00Z",done:true, next:"r16-01",slot:"home"}, // 28/06 19h BRT
+  {id:"r32-04",home:"ned",away:"mar",hs:1, as_:1,ph:2,pa:3,date:"2026-06-29T22:00:00Z",done:true, next:"r16-01",slot:"away"}, // 29/06 19h BRT
+  {id:"r32-03",home:"ger",away:"par",hs:1, as_:1,ph:3,pa:4,date:"2026-06-29T22:00:00Z",done:true, next:"r16-02",slot:"home"}, // 29/06 19h BRT
+  {id:"r32-05",home:"fra",away:"swe",hs:3, as_:0,          date:"2026-06-30T21:00:00Z",done:true, next:"r16-02",slot:"away"}, // 30/06 18h BRT: França 3×0 Suécia
+  {id:"r32-02",home:"bra",away:"jpn",hs:2, as_:1,          date:"2026-06-29T22:00:00Z",done:true, next:"r16-03",slot:"home"}, // 29/06 19h BRT
+  {id:"r32-06",home:"civ",away:"nor",hs:1, as_:2,          date:"2026-06-30T17:00:00Z",done:true, next:"r16-03",slot:"away"}, // 30/06 14h BRT: Noruega 2×1
+  {id:"r32-07",home:"mex",away:"ecu",hs:2, as_:0,          date:"2026-07-01T01:00:00Z",done:true, next:"r16-04",slot:"home"}, // 30/06 22h BRT: México 2×0 Equador
+  {id:"r32-09",home:"eng",away:"cod",hs:2, as_:1,          date:"2026-07-01T16:00:00Z",done:true, next:"r16-04",slot:"away"}, // 01/07 13h BRT: HOJE — Inglaterra 2×1 DR Congo ★
   // LADO DIREITO
-  {id:"r32-09",home:"eng",away:"cod",hs:null,as_:null,     date:"2026-07-01T16:00:00Z",done:false,next:"r16-05",slot:"home"}, // 01/07 13h BRT
+  {id:"r32-08",home:"esp",away:"aut",hs:null,as_:null,     date:"2026-07-02T19:00:00Z",done:false,next:"r16-05",slot:"home"}, // 02/07 16h BRT
   {id:"r32-10",home:"bel",away:"sen",hs:null,as_:null,     date:"2026-07-01T20:00:00Z",done:false,next:"r16-05",slot:"away"}, // 01/07 17h BRT
   {id:"r32-11",home:"usa",away:"bih",hs:null,as_:null,     date:"2026-07-02T00:00:00Z",done:false,next:"r16-06",slot:"home"}, // 01/07 21h BRT
   {id:"r32-12",home:"por",away:"cro",hs:null,as_:null,     date:"2026-07-02T23:00:00Z",done:false,next:"r16-06",slot:"away"}, // 02/07 20h BRT
-  {id:"r32-13",home:"sui",away:"alg",hs:null,as_:null,     date:"2026-07-03T03:00:00Z",done:false,next:"r16-07",slot:"home"}, // 03/07 00h BRT
-  {id:"r32-14",home:"aus",away:"egy",hs:null,as_:null,     date:"2026-07-03T18:00:00Z",done:false,next:"r16-07",slot:"away"}, // 03/07 15h BRT
-  {id:"r32-15",home:"arg",away:"cpv",hs:null,as_:null,     date:"2026-07-03T22:00:00Z",done:false,next:"r16-08",slot:"home"}, // 03/07 19h BRT
-  {id:"r32-16",home:"col",away:"gha",hs:null,as_:null,     date:"2026-07-04T01:30:00Z",done:false,next:"r16-08",slot:"away"}, // 03/07 22h30 BRT
+  {id:"r32-13",home:"sui",away:"alg",hs:null,as_:null,     date:"2026-07-03T03:00:00Z",done:false,next:"r16-07",slot:"home"}, // 03/07 00h BRT: Suíça vs Argélia
+  {id:"r32-16",home:"col",away:"gha",hs:null,as_:null,     date:"2026-07-04T01:30:00Z",done:false,next:"r16-07",slot:"away"}, // 03/07 22h30 BRT: Colômbia vs Gana → r16-07 ★
+  {id:"r32-14",home:"aus",away:"egy",hs:null,as_:null,     date:"2026-07-03T18:00:00Z",done:false,next:"r16-08",slot:"home"}, // 03/07 15h BRT
+  {id:"r32-15",home:"arg",away:"cpv",hs:null,as_:null,     date:"2026-07-03T22:00:00Z",done:false,next:"r16-08",slot:"away"}, // 03/07 19h BRT: Argentina vs Cabo Verde
 ];
 
-// Oitavas — horários oficiais BRT → UTC
+// Oitavas — horários oficiais Google/FIFA (BRT → UTC)
 const r16: R[] = [
   {id:"r16-01",home:"???",away:"???",hs:null,as_:null,date:"2026-07-04T17:00:00Z",done:false,next:"qf-01",slot:"home"}, // 04/07 14h BRT: Canadá × Marrocos
-  {id:"r16-02",home:"???",away:"???",hs:null,as_:null,date:"2026-07-04T21:00:00Z",done:false,next:"qf-01",slot:"away"}, // 04/07 18h BRT: Paraguai × FRA/SWE
+  {id:"r16-02",home:"???",away:"???",hs:null,as_:null,date:"2026-07-04T21:00:00Z",done:false,next:"qf-01",slot:"away"}, // 04/07 18h BRT
   {id:"r16-03",home:"???",away:"???",hs:null,as_:null,date:"2026-07-05T20:00:00Z",done:false,next:"qf-02",slot:"home"}, // 05/07 17h BRT: Brasil × Noruega ★
-  {id:"r16-04",home:"???",away:"???",hs:null,as_:null,date:"2026-07-06T00:00:00Z",done:false,next:"qf-02",slot:"away"}, // 05/07 21h BRT
-  {id:"r16-05",home:"???",away:"???",hs:null,as_:null,date:"2026-07-07T17:00:00Z",done:false,next:"qf-03",slot:"home"}, // 07/07 14h BRT
+  {id:"r16-04",home:"???",away:"???",hs:null,as_:null,date:"2026-07-06T00:00:00Z",done:false,next:"qf-02",slot:"away"}, // 05/07 21h BRT: MÉXICO vs INGLATERRA ★
+  {id:"r16-05",home:"???",away:"???",hs:null,as_:null,date:"2026-07-07T17:00:00Z",done:false,next:"qf-03",slot:"home"}, // 07/07 14h BRT: ESP/AUT × BEL/SEN
   {id:"r16-06",home:"???",away:"???",hs:null,as_:null,date:"2026-07-07T21:00:00Z",done:false,next:"qf-03",slot:"away"}, // 07/07 18h BRT
-  {id:"r16-07",home:"???",away:"???",hs:null,as_:null,date:"2026-07-08T18:00:00Z",done:false,next:"qf-04",slot:"home"}, // 08/07 15h BRT
+  {id:"r16-07",home:"???",away:"???",hs:null,as_:null,date:"2026-07-07T20:00:00Z",done:false,next:"qf-04",slot:"home"}, // 07/07 17h BRT: SUI/ALG × COL/GHA ★
   {id:"r16-08",home:"???",away:"???",hs:null,as_:null,date:"2026-07-08T22:00:00Z",done:false,next:"qf-04",slot:"away"}, // 08/07 19h BRT
 ];
 
