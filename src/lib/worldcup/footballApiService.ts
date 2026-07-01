@@ -1,4 +1,4 @@
-import type { WorldCupData, Match } from "./types";
+import type { WorldCupData, Match, BracketRound, Stage } from "./types";
 import { buildMockData } from "./mockWorldCupData";
 import { processWorldCupData, advanceBracket, identifyWinner } from "./bracketEngine";
 import { loadAdminScores } from "@/utils/adminScores";
@@ -51,7 +51,31 @@ function applyOverrides(data: WorldCupData, overrides: ScoreOverride[]): WorldCu
     return updated;
   });
 
-  return { ...data, matches: advanceBracket(matches) };
+  const updatedMatches = advanceBracket(matches);
+
+  // Reconstruir o bracket a partir dos matches atualizados
+  const STAGE_ORDER: Stage[] = [
+    "LAST_32", "LAST_16", "QUARTER_FINALS", "SEMI_FINALS", "THIRD_PLACE", "FINAL",
+  ];
+  const STAGE_NAMES: Record<Stage, string> = {
+    GROUP_STAGE: "Fase de Grupos",
+    LAST_32:     "16 Avos de Final",
+    LAST_16:     "Oitavas de Final",
+    QUARTER_FINALS: "Quartas de Final",
+    SEMI_FINALS: "Semifinais",
+    THIRD_PLACE: "3º Lugar",
+    FINAL:       "Final",
+  };
+  const bracket: BracketRound[] = STAGE_ORDER
+    .map((stage) => ({
+      id:      stage,
+      name:    STAGE_NAMES[stage],
+      stage,
+      matches: updatedMatches.filter((m) => m.stage === stage),
+    }))
+    .filter((r) => r.matches.length > 0);
+
+  return { ...data, matches: updatedMatches, bracket };
 }
 
 /**

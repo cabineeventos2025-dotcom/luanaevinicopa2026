@@ -1,17 +1,7 @@
-import type { Match, Stage } from "@/lib/worldcup/types";
+import type { BracketRound, Match } from "@/lib/worldcup/types";
 import { cn } from "@/lib/utils";
 import { formatMatchShort } from "@/utils/dateUtils";
 import { MapPin } from "lucide-react";
-
-// ─── Configuração de rounds ───────────────────────────────────────────────────
-const ROUND_CONFIG: { stage: Stage; name: string; emoji: string }[] = [
-  { stage: "LAST_32",        name: "16 Avos de Final",   emoji: "🔵" },
-  { stage: "LAST_16",        name: "Oitavas de Final",   emoji: "⚽" },
-  { stage: "QUARTER_FINALS", name: "Quartas de Final",   emoji: "🔥" },
-  { stage: "SEMI_FINALS",    name: "Semifinais",         emoji: "⭐" },
-  { stage: "THIRD_PLACE",    name: "3º Lugar",           emoji: "🥉" },
-  { stage: "FINAL",          name: "Final",              emoji: "🏆" },
-];
 
 // ─── Sub-componentes ──────────────────────────────────────────────────────────
 function TeamRow({
@@ -142,13 +132,12 @@ function OfficialMatchCard({ match }: { match: Match }) {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 /**
- * Recebe matches diretamente (não o bracket pré-montado) para sempre
- * refletir os últimos dados — incluindo overrides do admin em tempo real.
+ * Exibe o chaveamento oficial por rodadas.
+ * O `bracket` agora é sempre reconstruído em `applyOverrides` quando o admin
+ * atualiza um placar — garantindo que os resultados apareçam em tempo real.
  */
-export function OfficialBracketView({ matches }: { matches: Match[] }) {
-  const knockoutMatches = matches.filter((m) => m.stage !== "GROUP_STAGE");
-
-  if (!knockoutMatches.length) {
+export function OfficialBracketView({ bracket }: { bracket: BracketRound[] }) {
+  if (!bracket?.length) {
     return (
       <div className="text-center py-16">
         <div className="text-5xl mb-3">⏳</div>
@@ -161,26 +150,21 @@ export function OfficialBracketView({ matches }: { matches: Match[] }) {
   return (
     <div className="overflow-x-auto pb-4 -mx-4 px-4">
       <div className="flex gap-4 min-w-max items-start">
-        {ROUND_CONFIG.map(({ stage, name, emoji }) => {
-          const roundMatches = knockoutMatches.filter((m) => m.stage === stage);
-          if (!roundMatches.length) return null;
-          return (
-            <div key={stage} className="w-[260px] shrink-0">
-              {/* Round header */}
-              <div className="mb-3 flex items-center gap-2 px-1">
-                <span className="text-lg">{emoji}</span>
-                <h3 className="text-sm font-black text-gray-700 uppercase tracking-wider">
-                  {name}
-                </h3>
-              </div>
-              <div className="flex flex-col gap-3">
-                {roundMatches.map((m) => (
-                  <OfficialMatchCard key={m.id} match={m} />
-                ))}
-              </div>
+        {bracket.map((round) => (
+          <div key={round.id} className="w-[260px] shrink-0">
+            {/* Round header */}
+            <div className="mb-3 flex items-center gap-2 px-1">
+              <h3 className="text-sm font-black text-gray-700 uppercase tracking-wider">
+                {round.name}
+              </h3>
             </div>
-          );
-        })}
+            <div className="flex flex-col gap-3">
+              {round.matches.map((m) => (
+                <OfficialMatchCard key={m.id} match={m} />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

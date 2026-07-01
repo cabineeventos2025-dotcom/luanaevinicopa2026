@@ -284,7 +284,7 @@ function HomePage() {
                     Este é o chaveamento oficial com os dados reais. Não é afetado pelo simulador.
                   </p>
                 </div>
-                <OfficialBracketView matches={data.matches} />
+                <OfficialBracketView bracket={data.bracket} />
               </div>
             )}
 
