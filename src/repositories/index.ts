@@ -8,17 +8,14 @@ const _supabase = new SupabaseRankingRepository();
 
 /**
  * Repositório resiliente: salva em Supabase (ranking compartilhado entre todos).
- * Em caso de erro, cai silenciosamente para localStorage local.
+ * Propaga erros para o caller para que possam ser exibidos na UI.
  */
 class ResilientRankingRepository implements RankingRepository {
   async savePrediction(prediction: import("@/types/prediction").Prediction): Promise<void> {
-    // Tentar Supabase primeiro (ranking online compartilhado)
-    try {
-      await _supabase.savePrediction(prediction);
-    } catch (e) {
-      console.warn("[Ranking] Supabase falhou ao salvar, usando localStorage:", e);
-      await _local.savePrediction(prediction);
-    }
+    // Salva no Supabase — propaga erro se falhar
+    await _supabase.savePrediction(prediction);
+    // Salva localmente como backup (silencioso)
+    _local.savePrediction(prediction).catch(() => {});
   }
 
   async loadRanking(): Promise<import("@/types/prediction").RankingEntry[]> {
