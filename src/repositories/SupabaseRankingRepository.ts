@@ -6,8 +6,7 @@ export class SupabaseRankingRepository implements RankingRepository {
   async savePrediction(prediction: Prediction): Promise<void> {
     const sb = getSupabaseClient();
 
-    // Upsert into predictions table
-    const { error: predError } = await sb.from("predictions").upsert({
+    const payload = {
       code: prediction.code,
       participant_name: prediction.participant.name,
       participant_city: prediction.participant.city,
@@ -24,11 +23,21 @@ export class SupabaseRankingRepository implements RankingRepository {
       correct_winners: prediction.correctWinners,
       hash: prediction.hash,
       prediction_json: prediction,
-    });
+    };
 
-    if (predError) {
-      throw new Error(`Erro ao salvar palpite: ${predError.message}`);
+    // Tenta INSERT primeiro (não precisa de UPDATE policy)
+    const { error: insertError } = await sb.from("predictions").insert(payload);
+
+    if (!insertError) return; // sucesso!
+
+    // Se conflito de código único (23505), ignora — já foi salvo antes
+    if (insertError.code === "23505") {
+      console.warn("[Supabase] Palpite já existia, ignorando duplicata.");
+      return;
     }
+
+    // Qualquer outro erro — propaga para o caller
+    throw new Error(`Erro ao salvar palpite: ${insertError.message} (code: ${insertError.code})`);
   }
 
   async loadRanking(): Promise<RankingEntry[]> {

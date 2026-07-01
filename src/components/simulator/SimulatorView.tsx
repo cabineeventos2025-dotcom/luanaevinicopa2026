@@ -127,18 +127,31 @@ export function SimulatorView({ realData }: Props) {
 
       // Salvar no banco
       const repo = getRankingRepository();
-      await repo.savePrediction(prediction as any);
-      setPalpiteCode(code);
-      setSaved(true);
-      toast.success(`✅ Palpite salvo! Código: ${code}`, { duration: 8000 });
+      try {
+        await repo.savePrediction(prediction as any);
+        setPalpiteCode(code);
+        setSaved(true);
+        toast.success(`✅ Palpite salvo no ranking online! Código: ${code}`, { duration: 8000 });
+      } catch (saveErr: any) {
+        // Salvar só localmente se Supabase falhar
+        console.error("[SimulatorView] Erro ao salvar:", saveErr);
+        setPalpiteCode(code);
+        setSaved(true);
+        toast.warning(`⚠️ Salvo localmente. Erro online: ${saveErr?.message ?? saveErr}`, { duration: 10000 });
+      }
 
-      // Gerar PDF
-      await generatePredictionPDF(prediction as any);
-      toast.success("📄 PDF baixado com sucesso!");
+      // Gerar PDF independente do save
+      try {
+        await generatePredictionPDF(prediction as any);
+        toast.success("📄 PDF baixado com sucesso!");
+      } catch (pdfErr) {
+        console.error("[SimulatorView] Erro PDF:", pdfErr);
+        toast.error("Erro ao gerar PDF.");
+      }
 
     } catch (e) {
-      console.error("[SimulatorView] Erro:", e);
-      toast.error("Erro ao salvar. Verifique e tente novamente.");
+      console.error("[SimulatorView] Erro geral:", e);
+      toast.error("Erro ao processar palpite. Verifique e tente novamente.");
     } finally {
       setGenerating(false);
     }
