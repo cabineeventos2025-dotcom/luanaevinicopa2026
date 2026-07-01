@@ -1,18 +1,19 @@
-import type { BracketRound, Match, Stage } from "@/lib/worldcup/types";
+import type { Match, Stage } from "@/lib/worldcup/types";
 import { cn } from "@/lib/utils";
 import { formatMatchShort } from "@/utils/dateUtils";
 import { MapPin } from "lucide-react";
 
-const STAGE_EMOJI: Record<Stage, string> = {
-  GROUP_STAGE: "📊",
-  LAST_32: "🔵",
-  LAST_16: "⚽",
-  QUARTER_FINALS: "🔥",
-  SEMI_FINALS: "⭐",
-  THIRD_PLACE: "🥉",
-  FINAL: "🏆",
-};
+// ─── Configuração de rounds ───────────────────────────────────────────────────
+const ROUND_CONFIG: { stage: Stage; name: string; emoji: string }[] = [
+  { stage: "LAST_32",        name: "16 Avos de Final",   emoji: "🔵" },
+  { stage: "LAST_16",        name: "Oitavas de Final",   emoji: "⚽" },
+  { stage: "QUARTER_FINALS", name: "Quartas de Final",   emoji: "🔥" },
+  { stage: "SEMI_FINALS",    name: "Semifinais",         emoji: "⭐" },
+  { stage: "THIRD_PLACE",    name: "3º Lugar",           emoji: "🥉" },
+  { stage: "FINAL",          name: "Final",              emoji: "🏆" },
+];
 
+// ─── Sub-componentes ──────────────────────────────────────────────────────────
 function TeamRow({
   team,
   score,
@@ -71,15 +72,15 @@ function OfficialMatchCard({ match }: { match: Match }) {
   const winnerId = match.winner;
   const homeWin = winnerId && match.homeTeam?.id === winnerId;
   const awayWin = winnerId && match.awayTeam?.id === winnerId;
-  const isLive = match.status === "live";
+  const isLive     = match.status === "live";
   const isFinished = match.status === "finished";
-  const matchTime = formatMatchShort(match.date);
+  const matchTime  = formatMatchShort(match.date);
 
   return (
     <div
       className={cn(
         "rounded-2xl border bg-white shadow-sm transition-all hover:shadow-md",
-        isLive && "border-red-300 ring-2 ring-red-200",
+        isLive     && "border-red-300 ring-2 ring-red-200",
         isFinished && "border-green-200",
         !isFinished && !isLive && "border-gray-200",
       )}
@@ -139,8 +140,15 @@ function OfficialMatchCard({ match }: { match: Match }) {
   );
 }
 
-export function OfficialBracketView({ bracket }: { bracket: BracketRound[] }) {
-  if (!bracket.length) {
+// ─── Componente principal ─────────────────────────────────────────────────────
+/**
+ * Recebe matches diretamente (não o bracket pré-montado) para sempre
+ * refletir os últimos dados — incluindo overrides do admin em tempo real.
+ */
+export function OfficialBracketView({ matches }: { matches: Match[] }) {
+  const knockoutMatches = matches.filter((m) => m.stage !== "GROUP_STAGE");
+
+  if (!knockoutMatches.length) {
     return (
       <div className="text-center py-16">
         <div className="text-5xl mb-3">⏳</div>
@@ -153,23 +161,26 @@ export function OfficialBracketView({ bracket }: { bracket: BracketRound[] }) {
   return (
     <div className="overflow-x-auto pb-4 -mx-4 px-4">
       <div className="flex gap-4 min-w-max items-start">
-        {bracket.map((round) => (
-          <div key={round.id} className="w-[260px] shrink-0">
-            {/* Round header */}
-            <div className="mb-3 flex items-center gap-2 px-1">
-              <span className="text-lg">{STAGE_EMOJI[round.stage]}</span>
-              <h3 className="text-sm font-black text-gray-700 uppercase tracking-wider">
-                {round.name}
-              </h3>
+        {ROUND_CONFIG.map(({ stage, name, emoji }) => {
+          const roundMatches = knockoutMatches.filter((m) => m.stage === stage);
+          if (!roundMatches.length) return null;
+          return (
+            <div key={stage} className="w-[260px] shrink-0">
+              {/* Round header */}
+              <div className="mb-3 flex items-center gap-2 px-1">
+                <span className="text-lg">{emoji}</span>
+                <h3 className="text-sm font-black text-gray-700 uppercase tracking-wider">
+                  {name}
+                </h3>
+              </div>
+              <div className="flex flex-col gap-3">
+                {roundMatches.map((m) => (
+                  <OfficialMatchCard key={m.id} match={m} />
+                ))}
+              </div>
             </div>
-
-            <div className="flex flex-col gap-3">
-              {round.matches.map((m) => (
-                <OfficialMatchCard key={m.id} match={m} />
-              ))}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
