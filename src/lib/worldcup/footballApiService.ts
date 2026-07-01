@@ -3,7 +3,7 @@ import {
   fetchWorldCupData as fetchFromFootballDataOrg,
 } from "@/services/footballDataOrgService";
 import { buildMockData } from "./mockWorldCupData";
-import { processWorldCupData } from "./bracketEngine";
+import { processWorldCupData, advanceBracket, identifyWinner } from "./bracketEngine";
 import { loadAdminScores } from "@/utils/adminScores";
 
 export type DataSource = "football-data.org" | "api-football" | "mock";
@@ -16,7 +16,7 @@ export interface FetchResult {
 
 /**
  * Aplica os placares salvos pelo admin (localStorage) sobre os dados da Copa.
- * Isso permite atualizar resultados sem alterar o código.
+ * Usa identifyWinner para calcular o vencedor correto a partir do placar.
  */
 function applyAdminOverrides(data: WorldCupData): WorldCupData {
   const adminScores = loadAdminScores();
@@ -26,43 +26,47 @@ function applyAdminOverrides(data: WorldCupData): WorldCupData {
     const override = adminScores.find((s) => s.matchId === m.id);
     if (!override) return m;
 
-    return {
+    // Monta o match atualizado com os scores do admin
+    const updated: Match = {
       ...m,
-      homeScore: override.homeScore,
-      awayScore: override.awayScore,
+      homeScore:     override.homeScore,
+      awayScore:     override.awayScore,
       penaltiesHome: override.penaltiesHome ?? null,
       penaltiesAway: override.penaltiesAway ?? null,
-      status: override.done ? ("finished" as const) : m.status,
-      // winner/loser será recalculado por processWorldCupData
-      winner: null,
-      loser: null,
+      status:        override.done ? "finished" : m.status,
     };
+
+    // Calcula winner/loser a partir do placar (reutiliza lógica existente)
+    if (override.done && m.homeTeam && m.awayTeam) {
+      const { winner, loser } = identifyWinner(updated);
+      updated.winner = winner?.id ?? null;
+      updated.loser  = loser?.id  ?? null;
+    }
+
+    return updated;
   });
 
-  // Re-processa para propagar vencedores e montar bracket
-  return processWorldCupData({ ...data, matches });
+  // Re-propaga vencedores para as próximas fases
+  return { ...data, matches: advanceBracket(matches) };
 }
 
 /**
- * Tenta buscar dados reais da football-data.org (via proxy Vite em dev,
- * ou direto com a chave VITE_FOOTBALL_DATA_API_KEY em produção).
- * Se falhar, usa dados demonstrativos.
+ * Busca dados da Copa do Mundo.
+ * Tenta football-data.org; cai para mock se falhar.
  * Em ambos os casos, aplica overrides do admin (localStorage).
  */
 export async function fetchWorldCupData(): Promise<FetchResult> {
   try {
     const raw = await fetchFromFootballDataOrg();
     const processed = processWorldCupData(raw);
-    const withAdmin = applyAdminOverrides(processed);
-    return { data: withAdmin, source: "football-data.org" };
+    return { data: applyAdminOverrides(processed), source: "football-data.org" };
   } catch (err) {
     console.warn("[footballApiService] Usando dados demonstrativos:", err);
   }
 
   const mock = processWorldCupData(buildMockData());
-  const withAdmin = applyAdminOverrides(mock);
   return {
-    data: withAdmin,
+    data: applyAdminOverrides(mock),
     source: "mock",
     warning: "Não foi possível buscar dados reais. Mostrando dados demonstrativos.",
   };
