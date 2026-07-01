@@ -39,6 +39,30 @@ function RankingPage() {
     }
   }, []);
 
+  // Testa INSERT diretamente para diagnosticar permissões RLS
+  const [insertTest, setInsertTest] = useState<"idle"|"testing"|"ok"|"error">("idle");
+  const [insertError, setInsertError] = useState<string|null>(null);
+  const testInsert = useCallback(async () => {
+    setInsertTest("testing");
+    setInsertError(null);
+    try {
+      const sb = getSupabaseClient();
+      const testCode = "__test__" + Date.now();
+      const { error } = await sb.from("predictions").insert({
+        code: testCode,
+        participant_name: "__TESTE_RLS__",
+        participant_city: "__TESTE__",
+      });
+      if (error) throw new Error(error.message + " (code: " + error.code + ")");
+      // Limpar o registro de teste
+      await sb.from("predictions").delete().eq("code", testCode);
+      setInsertTest("ok");
+    } catch (e: any) {
+      setInsertTest("error");
+      setInsertError(e?.message ?? String(e));
+    }
+  }, []);
+
   const loadRanking = useCallback(async () => {
     setLoading(true);
     try {
@@ -80,7 +104,7 @@ function RankingPage() {
           </p>
 
           {/* Status Supabase */}
-          <div className={`mb-4 inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-bold border ${
+          <div className={`mb-2 inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-bold border ${
             supaStatus === "checking" ? "bg-gray-50 border-gray-200 text-gray-500" :
             supaStatus === "ok"       ? "bg-green-50 border-green-300 text-green-700" :
                                         "bg-red-50 border-red-300 text-red-700"
@@ -92,6 +116,27 @@ function RankingPage() {
             {supaStatus === "ok"       && "✅ Conectado ao banco online (Supabase)"}
             {supaStatus === "error"    && "❌ Banco offline — mostrando dados locais"}
           </div>
+
+          {/* Teste de INSERT */}
+          {supaStatus === "ok" && (
+            <div className="mb-3">
+              <button
+                onClick={testInsert}
+                disabled={insertTest === "testing"}
+                className="text-xs px-3 py-1.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-700 font-bold hover:bg-amber-100 transition-colors"
+              >
+                {insertTest === "testing" ? "Testando..." : "🔬 Testar permissão de salvar"}
+              </button>
+              {insertTest === "ok"    && <span className="ml-2 text-xs text-green-700 font-bold">✅ INSERT OK — permissões corretas!</span>}
+              {insertTest === "error" && (
+                <div className="mt-2 rounded-xl bg-red-50 border border-red-200 p-3 text-left max-w-lg mx-auto">
+                  <p className="text-xs font-black text-red-700">❌ INSERT falhou — problema de permissão RLS:</p>
+                  <p className="text-xs text-red-600 font-mono mt-1 break-all">{insertError}</p>
+                  <p className="text-xs text-red-500 mt-2">Rode o SQL de correção no Supabase SQL Editor.</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Mensagem de erro detalhada */}
           {supaStatus === "error" && supaError && (
