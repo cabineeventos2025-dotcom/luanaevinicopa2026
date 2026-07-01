@@ -66,7 +66,7 @@ export function SimulatorView({ realData }: Props) {
       const createdAtBrazil = formatBrazil(now);
       const code = generateCode();
 
-      // Monta lista de jogos para o palpite
+      // Monta lista de jogos para o palpite (inclui flagUrls e pênaltis para o PDF)
       const predMatches = simMatches
         .filter((m) => m.stage !== "GROUP_STAGE")
         .map((m) => ({
@@ -74,10 +74,14 @@ export function SimulatorView({ realData }: Props) {
           stage: m.stage,
           homeTeamId: m.homeTeam?.id ?? null,
           homeTeamName: m.homeTeam?.name ?? null,
+          homeTeamFlagUrl: m.homeTeam?.flagUrl ?? null,
           awayTeamId: m.awayTeam?.id ?? null,
           awayTeamName: m.awayTeam?.name ?? null,
+          awayTeamFlagUrl: m.awayTeam?.flagUrl ?? null,
           predictedHomeScore: m.homeScore,
           predictedAwayScore: m.awayScore,
+          predictedHomePens: m.penaltiesHome ?? null,
+          predictedAwayPens: m.penaltiesAway ?? null,
           predictedWinnerId: m.winner ?? null,
           predictedWinnerName: m.winner
             ? (m.homeTeam?.id === m.winner ? m.homeTeam?.name : m.awayTeam?.name) ?? null
