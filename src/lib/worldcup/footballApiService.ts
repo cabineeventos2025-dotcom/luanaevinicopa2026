@@ -1,10 +1,8 @@
 import type { WorldCupData, Match } from "./types";
-import {
-  fetchWorldCupData as fetchFromFootballDataOrg,
-} from "@/services/footballDataOrgService";
 import { buildMockData } from "./mockWorldCupData";
 import { processWorldCupData, advanceBracket, identifyWinner } from "./bracketEngine";
 import { loadAdminScores } from "@/utils/adminScores";
+import { loadMatchResults } from "@/services/matchResultsService";
 
 export type DataSource = "football-data.org" | "api-football" | "mock";
 
@@ -14,19 +12,27 @@ export interface FetchResult {
   warning?: string;
 }
 
+/** Tipo unificado de override de placar (vem do Supabase OU localStorage) */
+interface ScoreOverride {
+  matchId: string;
+  homeScore: number;
+  awayScore: number;
+  penaltiesHome?: number | null;
+  penaltiesAway?: number | null;
+  done: boolean;
+}
+
 /**
- * Aplica os placares salvos pelo admin (localStorage) sobre os dados da Copa.
- * Usa identifyWinner para calcular o vencedor correto a partir do placar.
+ * Aplica overrides de placar (do Supabase ou localStorage) sobre os dados da Copa.
+ * Usa identifyWinner para calcular o vencedor a partir do placar.
  */
-function applyAdminOverrides(data: WorldCupData): WorldCupData {
-  const adminScores = loadAdminScores();
-  if (!adminScores.length) return data;
+function applyOverrides(data: WorldCupData, overrides: ScoreOverride[]): WorldCupData {
+  if (!overrides.length) return data;
 
   const matches: Match[] = data.matches.map((m) => {
-    const override = adminScores.find((s) => s.matchId === m.id);
+    const override = overrides.find((s) => s.matchId === m.id);
     if (!override) return m;
 
-    // Monta o match atualizado com os scores do admin
     const updated: Match = {
       ...m,
       homeScore:     override.homeScore,
@@ -36,7 +42,6 @@ function applyAdminOverrides(data: WorldCupData): WorldCupData {
       status:        override.done ? "finished" : m.status,
     };
 
-    // Calcula winner/loser a partir do placar (reutiliza lógica existente)
     if (override.done && m.homeTeam && m.awayTeam) {
       const { winner, loser } = identifyWinner(updated);
       updated.winner = winner?.id ?? null;
@@ -46,28 +51,49 @@ function applyAdminOverrides(data: WorldCupData): WorldCupData {
     return updated;
   });
 
-  // Re-propaga vencedores para as próximas fases
   return { ...data, matches: advanceBracket(matches) };
 }
 
 /**
  * Busca dados da Copa do Mundo.
- * Tenta football-data.org; cai para mock se falhar.
- * Em ambos os casos, aplica overrides do admin (localStorage).
+ * Usa dados demonstrativos (mockWorldCupData) e aplica overrides de:
+ * 1. Supabase match_results (admin online — sem deploy)
+ * 2. Fallback: localStorage adminScores
  */
 export async function fetchWorldCupData(): Promise<FetchResult> {
+  const mock = processWorldCupData(buildMockData());
+
+  // Tentar carregar overrides do Supabase (admin salvou sem deploy)
   try {
-    const raw = await fetchFromFootballDataOrg();
-    const processed = processWorldCupData(raw);
-    return { data: applyAdminOverrides(processed), source: "football-data.org" };
+    const sbResults = await loadMatchResults();
+    if (sbResults.length) {
+      const overrides: ScoreOverride[] = sbResults.map((r) => ({
+        matchId:      r.match_id,
+        homeScore:    r.home_score,
+        awayScore:    r.away_score,
+        penaltiesHome: r.penalties_home,
+        penaltiesAway: r.penalties_away,
+        done:         r.done,
+      }));
+      return { data: applyOverrides(mock, overrides), source: "mock" };
+    }
   } catch (err) {
-    console.warn("[footballApiService] Usando dados demonstrativos:", err);
+    console.warn("[fetchWorldCupData] Supabase match_results indisponível, usando localStorage:", err);
   }
 
-  const mock = processWorldCupData(buildMockData());
-  return {
-    data: applyAdminOverrides(mock),
-    source: "mock",
-    warning: "Não foi possível buscar dados reais. Mostrando dados demonstrativos.",
-  };
+  // Fallback: localStorage (admin offline ou Supabase sem tabela)
+  const localScores = loadAdminScores();
+  if (localScores.length) {
+    const overrides: ScoreOverride[] = localScores.map((s) => ({
+      matchId:      s.matchId,
+      homeScore:    s.homeScore,
+      awayScore:    s.awayScore,
+      penaltiesHome: s.penaltiesHome,
+      penaltiesAway: s.penaltiesAway,
+      done:         s.done,
+    }));
+    return { data: applyOverrides(mock, overrides), source: "mock" };
+  }
+
+  return { data: mock, source: "mock" };
 }

@@ -5,13 +5,14 @@
  */
 
 import { useState, useEffect } from "react";
-import { X, Lock, Save, RefreshCw, CheckCircle, Clock, Trophy } from "lucide-react";
+import { X, Lock, Save, RefreshCw, CheckCircle, Clock, Trophy, Wifi, WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   type AdminScore,
   loadAdminScores,
   saveAdminScores,
 } from "@/utils/adminScores";
+import { saveMatchResult } from "@/services/matchResultsService";
 
 export type { AdminScore };
 
@@ -213,13 +214,34 @@ export function AdminPanel({ onClose, onScoresUpdated }: Props) {
     else { setPinError(true); }
   };
 
-  const handleSave = (score: AdminScore) => {
+  const [supaStatus, setSupaStatus] = useState<"idle"|"saving"|"ok"|"error">("idle");
+
+  const handleSave = async (score: AdminScore) => {
+    // 1. Salvar localStorage (fallback offline)
     setScores((prev) => {
       const updated = prev.filter((s) => s.matchId !== score.matchId).concat(score);
       saveAdminScores(updated);
-      onScoresUpdated();
       return updated;
     });
+
+    // 2. Salvar no Supabase (compartilhado — sem deploy)
+    setSupaStatus("saving");
+    try {
+      await saveMatchResult({
+        match_id:      score.matchId,
+        home_score:    score.homeScore,
+        away_score:    score.awayScore,
+        penalties_home: score.penaltiesHome ?? null,
+        penalties_away: score.penaltiesAway ?? null,
+        done:          score.done,
+      });
+      setSupaStatus("ok");
+      setTimeout(() => setSupaStatus("idle"), 3000);
+    } catch (e) {
+      console.error("[Admin] Supabase falhou:", e);
+      setSupaStatus("error");
+    }
+    onScoresUpdated();
   };
 
   const handleClear = (matchId: string) => {
@@ -247,9 +269,14 @@ export function AdminPanel({ onClose, onScoresUpdated }: Props) {
             <Trophy className="h-5 w-5 text-white" />
             <span className="font-black text-white text-base">Atualizar Placares — Admin</span>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-xl bg-white/20 text-white hover:bg-white/30 transition-colors">
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {supaStatus === "saving" && <span className="text-xs text-white/80 animate-pulse">Salvando...</span>}
+            {supaStatus === "ok"     && <span className="flex items-center gap-1 text-xs text-white font-bold"><Wifi className="h-3.5 w-3.5"/>Salvo online ✓</span>}
+            {supaStatus === "error"  && <span className="flex items-center gap-1 text-xs text-red-100 font-bold"><WifiOff className="h-3.5 w-3.5"/>Erro Supabase</span>}
+            <button onClick={onClose} className="p-1.5 rounded-xl bg-white/20 text-white hover:bg-white/30 transition-colors">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {!unlocked ? (
