@@ -217,31 +217,32 @@ export function AdminPanel({ onClose, onScoresUpdated }: Props) {
   const [supaStatus, setSupaStatus] = useState<"idle"|"saving"|"ok"|"error">("idle");
 
   const handleSave = async (score: AdminScore) => {
-    // 1. Salvar localStorage (fallback offline)
+    // 1. Salvar localStorage imediatamente (atualiza a UI na hora)
     setScores((prev) => {
       const updated = prev.filter((s) => s.matchId !== score.matchId).concat(score);
       saveAdminScores(updated);
       return updated;
     });
+    onScoresUpdated(); // << atualiza UI instantaneamente via localStorage
 
-    // 2. Salvar no Supabase (compartilhado — sem deploy)
+    // 2. Salvar no Supabase em paralelo (para compartilhar com todos)
     setSupaStatus("saving");
     try {
       await saveMatchResult({
-        match_id:      score.matchId,
-        home_score:    score.homeScore,
-        away_score:    score.awayScore,
+        match_id:       score.matchId,
+        home_score:     score.homeScore,
+        away_score:     score.awayScore,
         penalties_home: score.penaltiesHome ?? null,
         penalties_away: score.penaltiesAway ?? null,
-        done:          score.done,
+        done:           score.done,
       });
       setSupaStatus("ok");
       setTimeout(() => setSupaStatus("idle"), 3000);
+      onScoresUpdated(); // << atualiza novamente com dados do Supabase
     } catch (e) {
       console.error("[Admin] Supabase falhou:", e);
       setSupaStatus("error");
     }
-    onScoresUpdated();
   };
 
   const handleClear = (matchId: string) => {
