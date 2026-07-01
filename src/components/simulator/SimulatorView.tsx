@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import type { WorldCupData } from "@/lib/worldcup/types";
-import { BracketSimulator } from "./BracketSimulator";
+import { SimulatorList } from "./SimulatorList";
 import { advanceBracket, simulateWinner, resetSimMatch } from "@/lib/worldcup/bracketEngine";
 import { getRankingRepository } from "@/repositories";
 import { generatePredictionPDF } from "@/utils/pdfExport";
@@ -195,35 +195,32 @@ export function SimulatorView({ realData }: Props) {
         </div>
       </div>
 
-      {/* ── Chaveamento ── */}
+      {/* ── Lista de palpites (identico à pag. principal) ── */}
       <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <Trophy className="h-4 w-4 text-amber-500" />
-            <h3 className="text-sm font-black text-gray-800">Meu Chaveamento da Copa 2026</h3>
+            <h3 className="text-sm font-black text-gray-800">Meus Palpites da Copa 2026</h3>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="hidden sm:inline text-[10px] text-gray-400">← arraste →</span>
-            <button
-              onClick={handleReset}
-              className="flex items-center gap-1 rounded-xl border border-gray-200 px-2.5 py-1 text-[11px] font-bold text-gray-500 hover:bg-gray-50"
-              id="sim-reset-btn"
-            >
-              <RotateCcw className="h-3 w-3" /> Resetar
-            </button>
-          </div>
+          <button
+            onClick={handleReset}
+            className="flex items-center gap-1 rounded-xl border border-gray-200 px-2.5 py-1 text-[11px] font-bold text-gray-500 hover:bg-gray-50"
+            id="sim-reset-btn"
+          >
+            <RotateCcw className="h-3 w-3" /> Resetar tudo
+          </button>
         </div>
 
         <div className="bg-amber-50 border-b border-amber-100 px-4 py-1.5 text-[11px] text-amber-700 font-semibold flex gap-2 items-center">
           <span>🎯</span>
           <span>
-            <strong>Jogos finalizados</strong> mostram o placar real.
-            <strong> Próximos jogos</strong>: use os campos de placar ou clique nos botões para palpitar!
+            <strong>Jogos encerrados</strong> mostram placar real.{" "}
+            <strong>Próximos jogos</strong>: clique em "X vence" ou preencha o placar!
           </span>
         </div>
 
         <div className="p-3">
-          <BracketSimulator matches={simMatches} onSelectWinner={handleSelect} onReset={handleResetMatch} />
+          <SimulatorList matches={simMatches} onSelectWinner={handleSelect} onReset={handleResetMatch} />
         </div>
       </div>
 
