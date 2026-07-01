@@ -1,6 +1,8 @@
 import type { Prediction, RankingEntry } from "@/types/prediction";
 import type { RankingRepository } from "./RankingRepository";
 import { getSupabaseClient } from "@/services/supabaseClient";
+import { fetchWorldCupData } from "@/lib/worldcup/footballApiService";
+import { updateRankingWithRealResults, sortRanking } from "@/utils/ranking";
 
 export class SupabaseRankingRepository implements RankingRepository {
   async savePrediction(prediction: Prediction): Promise<void> {
@@ -25,46 +27,59 @@ export class SupabaseRankingRepository implements RankingRepository {
       prediction_json: prediction,
     };
 
-    // Tenta INSERT primeiro (não precisa de UPDATE policy)
+    // Tenta INSERT (não precisa de UPDATE policy)
     const { error: insertError } = await sb.from("predictions").insert(payload);
 
     if (!insertError) return; // sucesso!
 
-    // Se conflito de código único (23505), ignora — já foi salvo antes
+    // Código duplicado (23505) = mesmo usuário tentou de novo, ignora
     if (insertError.code === "23505") {
       console.warn("[Supabase] Palpite já existia, ignorando duplicata.");
       return;
     }
 
-    // Qualquer outro erro — propaga para o caller
     throw new Error(`Erro ao salvar palpite: ${insertError.message} (code: ${insertError.code})`);
   }
 
+  /**
+   * Carrega o ranking do Supabase e recalcula os pontos com os resultados reais.
+   * Isso garante que a pontuação reflita os jogos que já terminaram.
+   */
   async loadRanking(): Promise<RankingEntry[]> {
     const sb = getSupabaseClient();
+
+    // 1. Carregar todos os palpites (com prediction_json para recalcular pontos)
     const { data, error } = await sb
       .from("predictions")
-      .select("code, participant_name, participant_city, total_points, exact_scores, correct_winners, created_at_brazil, champion_team_name")
-      .order("total_points", { ascending: false })
-      .order("exact_scores", { ascending: false })
-      .order("correct_winners", { ascending: false })
+      .select("prediction_json, created_at")
       .order("created_at", { ascending: true });
 
     if (error) {
       throw new Error(`Erro ao carregar ranking: ${error.message}`);
     }
 
-    return (data ?? []).map((row, i) => ({
-      position: i + 1,
-      code: row.code,
-      participantName: row.participant_name,
-      participantCity: row.participant_city,
-      totalPoints: row.total_points ?? 0,
-      exactScores: row.exact_scores ?? 0,
-      correctWinners: row.correct_winners ?? 0,
-      createdAtBrazil: row.created_at_brazil ?? "",
-      championTeamName: row.champion_team_name,
-    }));
+    const predictions = (data ?? [])
+      .map((row) => row.prediction_json as Prediction)
+      .filter(Boolean);
+
+    if (!predictions.length) return [];
+
+    // 2. Carregar resultados reais dos jogos (mock + overrides do Supabase/admin)
+    let realMatches: import("@/lib/worldcup/types").Match[] = [];
+    try {
+      const { data: matchData } = await fetchWorldCupData();
+      realMatches = matchData.matches;
+    } catch {
+      // Se falhar, usa pontos salvos no banco (pode estar desatualizado)
+    }
+
+    // 3. Recalcular pontos de cada palpite com os resultados reais
+    const updated = realMatches.length
+      ? updateRankingWithRealResults(predictions, realMatches)
+      : predictions;
+
+    // 4. Ordenar e retornar
+    return sortRanking(updated);
   }
 
   async loadPrediction(code: string): Promise<Prediction | null> {

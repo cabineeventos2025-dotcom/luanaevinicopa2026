@@ -3,9 +3,8 @@ import { useEffect, useState, useCallback } from "react";
 import { RankingTable } from "@/components/ranking/RankingTable";
 import { RankingPodium } from "@/components/ranking/RankingPodium";
 import { getRankingRepository } from "@/repositories";
-import { getSupabaseClient } from "@/services/supabaseClient";
 import type { RankingEntry } from "@/types/prediction";
-import { RefreshCw, Trophy, Users, Share2, Copy, Wifi, WifiOff, AlertCircle } from "lucide-react";
+import { RefreshCw, Trophy, Users, Share2, Copy } from "lucide-react";
 import { YouTubeButton } from "@/components/common/YouTubeButton";
 import { Header } from "@/components/layout/Header";
 import { Toaster } from "@/components/ui/sonner";
@@ -15,53 +14,10 @@ export const Route = createFileRoute("/ranking")({
   component: RankingPage,
 });
 
-type SupaStatus = "checking" | "ok" | "error";
-
 function RankingPage() {
   const [entries, setEntries]         = useState<RankingEntry[]>([]);
   const [loading, setLoading]         = useState(true);
-  const [supaStatus, setSupaStatus]   = useState<SupaStatus>("checking");
-  const [supaError, setSupaError]     = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-
-  // Testa conexão Supabase diretamente
-  const checkSupabase = useCallback(async () => {
-    setSupaStatus("checking");
-    setSupaError(null);
-    try {
-      const sb = getSupabaseClient();
-      const { error } = await sb.from("predictions").select("code", { count: "exact", head: true });
-      if (error) throw new Error(error.message);
-      setSupaStatus("ok");
-    } catch (e: any) {
-      setSupaStatus("error");
-      setSupaError(e?.message ?? String(e));
-    }
-  }, []);
-
-  // Testa INSERT diretamente para diagnosticar permissões RLS
-  const [insertTest, setInsertTest] = useState<"idle"|"testing"|"ok"|"error">("idle");
-  const [insertError, setInsertError] = useState<string|null>(null);
-  const testInsert = useCallback(async () => {
-    setInsertTest("testing");
-    setInsertError(null);
-    try {
-      const sb = getSupabaseClient();
-      const testCode = "__test__" + Date.now();
-      const { error } = await sb.from("predictions").insert({
-        code: testCode,
-        participant_name: "__TESTE_RLS__",
-        participant_city: "__TESTE__",
-      });
-      if (error) throw new Error(error.message + " (code: " + error.code + ")");
-      // Limpar o registro de teste
-      await sb.from("predictions").delete().eq("code", testCode);
-      setInsertTest("ok");
-    } catch (e: any) {
-      setInsertTest("error");
-      setInsertError(e?.message ?? String(e));
-    }
-  }, []);
 
   const loadRanking = useCallback(async () => {
     setLoading(true);
@@ -77,15 +33,7 @@ function RankingPage() {
     }
   }, []);
 
-  useEffect(() => {
-    checkSupabase();
-    loadRanking();
-  }, []);
-
-  const handleRefresh = () => {
-    checkSupabase();
-    loadRanking();
-  };
+  useEffect(() => { loadRanking(); }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white">
@@ -103,59 +51,8 @@ function RankingPage() {
             Monte seu chaveamento, escolha os placares e acompanhe sua pontuação conforme os jogos acontecem.
           </p>
 
-          {/* Status Supabase */}
-          <div className={`mb-2 inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-bold border ${
-            supaStatus === "checking" ? "bg-gray-50 border-gray-200 text-gray-500" :
-            supaStatus === "ok"       ? "bg-green-50 border-green-300 text-green-700" :
-                                        "bg-red-50 border-red-300 text-red-700"
-          }`}>
-            {supaStatus === "checking" && <RefreshCw className="h-4 w-4 animate-spin" />}
-            {supaStatus === "ok"       && <Wifi className="h-4 w-4" />}
-            {supaStatus === "error"    && <WifiOff className="h-4 w-4" />}
-            {supaStatus === "checking" && "Verificando conexão..."}
-            {supaStatus === "ok"       && "✅ Conectado ao banco online (Supabase)"}
-            {supaStatus === "error"    && "❌ Banco offline — mostrando dados locais"}
-          </div>
-
-          {/* Teste de INSERT */}
-          {supaStatus === "ok" && (
-            <div className="mb-3">
-              <button
-                onClick={testInsert}
-                disabled={insertTest === "testing"}
-                className="text-xs px-3 py-1.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-700 font-bold hover:bg-amber-100 transition-colors"
-              >
-                {insertTest === "testing" ? "Testando..." : "🔬 Testar permissão de salvar"}
-              </button>
-              {insertTest === "ok"    && <span className="ml-2 text-xs text-green-700 font-bold">✅ INSERT OK — permissões corretas!</span>}
-              {insertTest === "error" && (
-                <div className="mt-2 rounded-xl bg-red-50 border border-red-200 p-3 text-left max-w-lg mx-auto">
-                  <p className="text-xs font-black text-red-700">❌ INSERT falhou — problema de permissão RLS:</p>
-                  <p className="text-xs text-red-600 font-mono mt-1 break-all">{insertError}</p>
-                  <p className="text-xs text-red-500 mt-2">Rode o SQL de correção no Supabase SQL Editor.</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Mensagem de erro detalhada */}
-          {supaStatus === "error" && supaError && (
-            <div className="mx-auto max-w-lg mb-4 rounded-2xl bg-red-50 border border-red-200 p-4 text-left">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs font-black text-red-700 mb-1">Erro Supabase:</p>
-                  <p className="text-xs text-red-600 font-mono break-all">{supaError}</p>
-                  <p className="text-xs text-red-500 mt-2">
-                    Verifique se a tabela <code className="bg-red-100 px-1 rounded">predictions</code> existe no Supabase e se o projeto não está pausado.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Link compartilhável */}
-          <div className="mt-2 flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center gap-3">
             <div className="flex items-center gap-2 rounded-2xl bg-white border-2 border-amber-300 px-4 py-2.5 shadow-sm max-w-sm w-full">
               <Share2 className="h-4 w-4 text-amber-500 shrink-0" />
               <span className="text-sm font-bold text-gray-600 truncate flex-1" id="ranking-public-url">
@@ -174,7 +71,7 @@ function RankingPage() {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={handleRefresh}
+                onClick={loadRanking}
                 disabled={loading}
                 id="ranking-refresh-btn"
                 className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white hover:bg-amber-600 disabled:opacity-60 transition-colors"
