@@ -4,23 +4,42 @@ import { calculateMatchScore, calculateTotalScore } from "./scoring";
 
 /**
  * Atualiza os pontos de um palpite com base nos resultados reais.
+ *
+ * REGRA ANTI-TRAPAÇA: só conta pontos de jogos cujo horário de início era
+ * POSTERIOR ao envio do palpite. Quem palpita depois de um jogo já ter
+ * começado não recebe pontos retroativos por aquele jogo.
  */
 export function updatePredictionWithRealResults(
   prediction: Prediction,
   realMatches: Match[],
 ): Prediction {
+  const predictionTime = new Date(prediction.createdAt).getTime();
+
   const updatedMatches: PredictionMatch[] = prediction.matches.map((pred) => {
     const real = realMatches.find((m) => m.id === pred.matchId);
-    if (!real || real.status !== "finished") return pred;
+    if (!real || real.status !== "finished") return { ...pred, points: 0 };
+
+    // ⏰ Anti-trapaça: jogo começou antes do palpite ser enviado → 0 pontos
+    const matchKickoff = new Date(real.date).getTime();
+    if (matchKickoff <= predictionTime) {
+      return { ...pred, points: 0, scoreReason: "⏰ Jogo já havia iniciado" };
+    }
 
     const { points, reason } = calculateMatchScore(real, pred);
     return { ...pred, points, scoreReason: reason };
   });
 
-  const { totalPoints, exactScores, correctWinners } = calculateTotalScore(
-    updatedMatches,
-    realMatches,
-  );
+  // Calcular totais a partir dos matches já filtrados por tempo
+  let totalPoints = 0;
+  let exactScores = 0;
+  let correctWinners = 0;
+
+  for (const m of updatedMatches) {
+    const pts = m.points ?? 0;
+    totalPoints += pts;
+    if (pts === 10) exactScores++;
+    if (pts >= 6) correctWinners++;
+  }
 
   return { ...prediction, matches: updatedMatches, totalPoints, exactScores, correctWinners };
 }
