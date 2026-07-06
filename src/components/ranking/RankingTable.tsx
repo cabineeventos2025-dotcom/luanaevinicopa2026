@@ -1,12 +1,13 @@
 import { cn } from "@/lib/utils";
 import type { RankingEntry } from "@/types/prediction";
 import { isUsingLocalStorage } from "@/repositories";
-import { Trophy, MapPin, Info } from "lucide-react";
+import { Trophy, MapPin, Info, ChevronRight } from "lucide-react";
 
 interface RankingTableProps {
   entries: RankingEntry[];
   loading?: boolean;
   error?: string | null;
+  onSelectEntry?: (code: string) => void;
 }
 
 function PositionBadge({ position }: { position: number }) {
@@ -23,7 +24,7 @@ function PositionBadge({ position }: { position: number }) {
   );
 }
 
-export function RankingTable({ entries, loading, error }: RankingTableProps) {
+export function RankingTable({ entries, loading, error, onSelectEntry }: RankingTableProps) {
   const isLocal = isUsingLocalStorage();
 
   return (
@@ -71,11 +72,18 @@ export function RankingTable({ entries, loading, error }: RankingTableProps) {
       {/* Ranking list */}
       {!loading && entries.length > 0 && (
         <div className="space-y-2">
+          {onSelectEntry && (
+            <p className="text-xs text-gray-400 text-center mb-2">
+              👆 Toque no nome para ver os palpites completos
+            </p>
+          )}
           {entries.map((entry) => (
             <div
               key={entry.code}
+              onClick={() => onSelectEntry?.(entry.code)}
               className={cn(
                 "flex items-center gap-4 rounded-2xl border p-4 transition-all hover:shadow-md",
+                onSelectEntry && "cursor-pointer hover:scale-[1.01] active:scale-[0.99]",
                 entry.position === 1 && "bg-gradient-to-r from-yellow-50 to-amber-50 border-amber-300 shadow-md",
                 entry.position === 2 && "bg-gradient-to-r from-gray-50 to-slate-50 border-gray-300",
                 entry.position === 3 && "bg-gradient-to-r from-orange-50 to-amber-50 border-orange-300",
@@ -101,15 +109,20 @@ export function RankingTable({ entries, loading, error }: RankingTableProps) {
               </div>
 
               {/* Score */}
-              <div className="shrink-0 text-right">
-                <div className="font-black text-2xl text-amber-600 leading-none">
-                  {entry.totalPoints}
+              <div className="shrink-0 text-right flex items-center gap-2">
+                <div>
+                  <div className="font-black text-2xl text-amber-600 leading-none">
+                    {entry.totalPoints}
+                  </div>
+                  <div className="text-[10px] text-gray-400 mt-0.5">pontos</div>
+                  <div className="flex gap-2 mt-1 text-[10px] text-gray-500">
+                    <span title="Placares exatos">🎯 {entry.exactScores}</span>
+                    <span title="Vencedores corretos">✅ {entry.correctWinners}</span>
+                  </div>
                 </div>
-                <div className="text-[10px] text-gray-400 mt-0.5">pontos</div>
-                <div className="flex gap-2 mt-1 text-[10px] text-gray-500">
-                  <span title="Placares exatos">🎯 {entry.exactScores}</span>
-                  <span title="Vencedores corretos">✅ {entry.correctWinners}</span>
-                </div>
+                {onSelectEntry && (
+                  <ChevronRight className="h-4 w-4 text-gray-300" />
+                )}
               </div>
             </div>
           ))}
