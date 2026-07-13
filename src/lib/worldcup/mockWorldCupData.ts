@@ -113,22 +113,22 @@ const r32: R[] = [
 
 // Oitavas — horários oficiais Google/FIFA (BRT → UTC)
 const r16: R[] = [
-  {id:"r16-01",home:"???",away:"???",hs:0,   as_:3,   date:"2026-07-04T17:00:00Z",done:true, next:"qf-01",slot:"home"}, // 04/07 14h BRT: Canadá 0×3 Marrocos ★
-  {id:"r16-02",home:"???",away:"???",hs:0,   as_:1,   date:"2026-07-04T21:00:00Z",done:true, next:"qf-01",slot:"away"}, // 04/07 18h BRT: Paraguai 0×1 França ★
-  {id:"r16-03",home:"???",away:"???",hs:1,   as_:2,   date:"2026-07-05T20:00:00Z",done:true, next:"qf-02",slot:"home"}, // 05/07 17h BRT: Brasil 1×2 Noruega ★
-  {id:"r16-04",home:"???",away:"???",hs:2,   as_:3,   date:"2026-07-06T00:00:00Z",done:true, next:"qf-02",slot:"away"}, // 05/07 21h BRT: México 2×3 Inglaterra ★
-  {id:"r16-05",home:"???",away:"???",hs:null,as_:null,date:"2026-07-06T19:00:00Z",done:false,next:"qf-03",slot:"home"}, // 06/07 16h BRT: Espanha vs Portugal
-  {id:"r16-06",home:"???",away:"???",hs:null,as_:null,date:"2026-07-07T00:00:00Z",done:false,next:"qf-03",slot:"away"}, // 06/07 21h BRT: Bélgica vs EUA
-  {id:"r16-07",home:"???",away:"???",hs:null,as_:null,date:"2026-07-07T20:00:00Z",done:false,next:"qf-04",slot:"home"}, // 07/07 17h BRT: Suíça vs Colômbia
-  {id:"r16-08",home:"???",away:"???",hs:null,as_:null,date:"2026-07-08T22:00:00Z",done:false,next:"qf-04",slot:"away"}, // 08/07 19h BRT: Egito vs Argentina
+  {id:"r16-01",home:"???",away:"???",hs:0,   as_:3,         date:"2026-07-04T17:00:00Z",done:true, next:"qf-01",slot:"home"}, // 04/07 14h BRT: Canadá 0×3 Marrocos ★
+  {id:"r16-02",home:"???",away:"???",hs:0,   as_:1,         date:"2026-07-04T21:00:00Z",done:true, next:"qf-01",slot:"away"}, // 04/07 18h BRT: Paraguai 0×1 França ★
+  {id:"r16-03",home:"???",away:"???",hs:1,   as_:2,         date:"2026-07-05T20:00:00Z",done:true, next:"qf-02",slot:"home"}, // 05/07 17h BRT: Brasil 1×2 Noruega ★
+  {id:"r16-04",home:"???",away:"???",hs:2,   as_:3,         date:"2026-07-06T00:00:00Z",done:true, next:"qf-02",slot:"away"}, // 05/07 21h BRT: México 2×3 Inglaterra ★
+  {id:"r16-05",home:"???",away:"???",hs:1,   as_:0,         date:"2026-07-06T19:00:00Z",done:true, next:"qf-03",slot:"home"}, // 06/07 16h BRT: Espanha 1×0 Portugal ★
+  {id:"r16-06",home:"???",away:"???",hs:4,   as_:1,         date:"2026-07-07T00:00:00Z",done:true, next:"qf-03",slot:"away"}, // 06/07 21h BRT: Bélgica 4×1 EUA ★
+  {id:"r16-07",home:"???",away:"???",hs:0,   as_:0,ph:4,pa:3,date:"2026-07-07T20:00:00Z",done:true, next:"qf-04",slot:"home"}, // 07/07 17h BRT: Suíça 0×0 Colômbia (SUI 4-3 pên.) ★
+  {id:"r16-08",home:"???",away:"???",hs:2,   as_:3,         date:"2026-07-08T22:00:00Z",done:true, next:"qf-04",slot:"away"}, // 08/07 19h BRT: Egito 2×3 Argentina ★
 ];
 
-// Quartas — 9 a 12 de julho
+// Quartas — todos finalizados (9–12 julho)
 const qf: R[] = [
-  {id:"qf-01",home:"???",away:"???",hs:null,as_:null,date:"2026-07-09T21:00:00Z",done:false,next:"sf-01",slot:"home"}, // 09/07 18h BRT: França × Marrocos
-  {id:"qf-02",home:"???",away:"???",hs:null,as_:null,date:"2026-07-11T21:00:00Z",done:false,next:"sf-01",slot:"away"}, // 11/07 18h BRT: Noruega × Inglaterra ★
-  {id:"qf-03",home:"???",away:"???",hs:null,as_:null,date:"2026-07-10T21:00:00Z",done:false,next:"sf-02",slot:"home"}, // 10/07 18h BRT: vencedor ESP/POR × BEL/EUA
-  {id:"qf-04",home:"???",away:"???",hs:null,as_:null,date:"2026-07-12T21:00:00Z",done:false,next:"sf-02",slot:"away"}, // 12/07 18h BRT: vencedor ARG/EGY × SUI/COL
+  {id:"qf-01",home:"???",away:"???",hs:0,as_:2,date:"2026-07-09T21:00:00Z",done:true, next:"sf-01",slot:"home"}, // 09/07 18h BRT: Marrocos 0×2 França ★
+  {id:"qf-02",home:"???",away:"???",hs:1,as_:2,date:"2026-07-11T21:00:00Z",done:true, next:"sf-01",slot:"away"}, // 11/07 18h BRT: Noruega 1×2 Inglaterra ★
+  {id:"qf-03",home:"???",away:"???",hs:2,as_:1,date:"2026-07-10T21:00:00Z",done:true, next:"sf-02",slot:"home"}, // 10/07 18h BRT: Espanha 2×1 Bélgica ★
+  {id:"qf-04",home:"???",away:"???",hs:1,as_:3,date:"2026-07-12T21:00:00Z",done:true, next:"sf-02",slot:"away"}, // 12/07 18h BRT: Suíça 1×3 Argentina ★
 ];
 
 // Semifinais — 14 e 15 de julho
