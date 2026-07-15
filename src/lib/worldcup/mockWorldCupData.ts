@@ -126,15 +126,15 @@ const r16: R[] = [
 // Quartas — todos finalizados (9–12 julho)
 const qf: R[] = [
   {id:"qf-01",home:"???",away:"???",hs:0,as_:2,date:"2026-07-09T21:00:00Z",done:true, next:"sf-01",slot:"home"}, // 09/07 18h BRT: Marrocos 0×2 França ★
-  {id:"qf-02",home:"???",away:"???",hs:1,as_:2,date:"2026-07-11T21:00:00Z",done:true, next:"sf-01",slot:"away"}, // 11/07 18h BRT: Noruega 1×2 Inglaterra ★
-  {id:"qf-03",home:"???",away:"???",hs:2,as_:1,date:"2026-07-10T21:00:00Z",done:true, next:"sf-02",slot:"home"}, // 10/07 18h BRT: Espanha 2×1 Bélgica ★
+  {id:"qf-02",home:"???",away:"???",hs:1,as_:2,date:"2026-07-11T21:00:00Z",done:true, next:"sf-02",slot:"home"}, // 11/07 18h BRT: Noruega 1×2 Inglaterra → sf-02 ★
+  {id:"qf-03",home:"???",away:"???",hs:2,as_:1,date:"2026-07-10T21:00:00Z",done:true, next:"sf-01",slot:"away"}, // 10/07 18h BRT: Espanha 2×1 Bélgica → sf-01 ★
   {id:"qf-04",home:"???",away:"???",hs:1,as_:3,date:"2026-07-12T21:00:00Z",done:true, next:"sf-02",slot:"away"}, // 12/07 18h BRT: Suíça 1×3 Argentina ★
 ];
 
-// Semifinais — 14 e 15 de julho
+// Semifinais — 14 e 15 de julho (ambas finalizadas)
 const sf: R[] = [
-  {id:"sf-01",home:"???",away:"???",hs:null,as_:null,date:"2026-07-14T19:00:00Z",done:false,next:"final",slot:"home"}, // 14/07 16h BRT
-  {id:"sf-02",home:"???",away:"???",hs:null,as_:null,date:"2026-07-15T19:00:00Z",done:false,next:"final",slot:"away"}, // 15/07 16h BRT
+  {id:"sf-01",home:"???",away:"???",hs:0,as_:2,date:"2026-07-14T22:00:00Z",done:true, next:"final",slot:"home"}, // 14/07 19h BRT: França 0×2 Espanha ★ (Espanha → Final)
+  {id:"sf-02",home:"???",away:"???",hs:1,as_:2,date:"2026-07-15T22:00:00Z",done:true, next:"final",slot:"away"}, // 15/07 19h BRT: Inglaterra 1×2 Argentina ★ (Argentina → Final)
 ];
 
 function toMatch(e: R, stage: Stage, round: string, teams: Team[]): Match {
